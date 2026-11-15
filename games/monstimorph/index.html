@@ -323,7 +323,7 @@ body.evofocus #ind,body.evofocus #dmg,body.evofocus #tipBox,body.evofocus #toast
 <!-- BIOMES -->
 <div class="ov dim" id="biomes" style="justify-content:flex-start">
   <div class="title out">BIOME</div>
-  <div class="subt">Überlebe 5:00, um das nächste Biom freizuschalten. Besiege den Final-Boss bei 10:00!</div>
+  <div class="subt">Überlebe 2:30, um das nächste Biom freizuschalten. Besiege den Final-Boss bei 5:00!</div>
   <div id="biomeList"></div>
   <button class="btn wood" id="bBack">ZURÜCK</button>
 </div>
@@ -642,7 +642,7 @@ const CHARS=[
     unlock:null},
   {id:'flammi',el:'fire',name:'Flammi',emoji:'🔥',desc:'Ein hitzköpfiger Salamander mit Feuerschwanz.',start:'flame',hp:90,spd:1.05,dmg:1.12,trait:'Heißblütig: +12% Schaden, Feuer brennt länger',ap:s=>{s.burnMul=1.5;},
     look:{body:'#e8402a',belly:'#ffcf7a',horn:'#ffb347',acc:'#ff9a1f',tip:'#ff8a00',horns:'none',ears:'fin',tail:'flame',extra:'none',scale:[1.12,0.85,1.15]},
-    cost:300,unlock:{t:'Überlebe 5:00 in einem Run',ok:m=>Math.max(0,...Object.values(m.st.bestT))>=300,prog:m=>fmtT(Math.max(0,...Object.values(m.st.bestT),0))+' / 5:00'}},
+    cost:300,unlock:{t:'Überlebe 4:00 in einem Run',ok:m=>Math.max(0,...Object.values(m.st.bestT))>=240,prog:m=>fmtT(Math.max(0,...Object.values(m.st.bestT),0))+' / 4:00'}},
   {id:'frosti',el:'frost',name:'Frosti',emoji:'❄️',desc:'Ein flauschiger Mini-Yeti, kühl und robust.',start:'frost',hp:140,spd:0.95,dmg:1,trait:'Dickes Fell: +40 HP, Einfrieren hält länger',ap:s=>{s.freezeMul=1.4;},
     look:{body:'#eef6ff',belly:'#bfe2ff',horn:'#8fcfff',acc:'#8fcfff',tip:'#bff0ff',horns:'small',ears:'round',tail:'fluffy',extra:'fur',scale:[1.1,1.05,1.05]},
     cost:400,unlock:{t:'Besiege insgesamt 2 Bosse',ok:m=>m.st.boss>=2,prog:m=>`${Math.min(2,m.st.boss)} / 2`}},
@@ -657,7 +657,7 @@ const CHARS=[
     cost:1000,unlock:{t:'Sammle insgesamt 3000 Münzen',ok:m=>m.st.coinsLife>=3000,prog:m=>`${Math.min(3000,m.st.coinsLife)} / 3000`}},
   {id:'kokos',el:'force',name:'Kokos',emoji:'🥥',desc:'Ein harter Brocken mit Kokos-Panzer.',start:'meteor',hp:170,spd:0.88,dmg:1.05,trait:'Panzer: +70 HP, −3 Schaden pro Treffer',ap:s=>s.armor+=3,
     look:{body:'#8b5a2b',belly:'#f3e2c0',horn:'#5e3a17',acc:'#5e3a17',tip:'#ffe14d',horns:'none',ears:'round',tail:'none',extra:'hair',scale:[1.2,1.08,1.2]},
-    cost:1200,unlock:{t:'Besiege den Final-Boss im Dschungel',ok:m=>!!(m.st.wins&&m.st.wins.jungle),prog:m=>'Final-Boss bei 10:00'}},
+    cost:1200,unlock:{t:'Besiege den Final-Boss im Dschungel',ok:m=>!!(m.st.wins&&m.st.wins.jungle),prog:m=>'Final-Boss bei 5:00'}},
   {id:'glitch',name:'Glitch',emoji:'👾',desc:'Ein Fehler in der Matrix. Liebt das Chaos.',start:'random',hp:100,spd:1.05,dmg:1.05,trait:'Chaos-Kind: viel höhere Chaos-Chance, +1 Neu würfeln',ap:s=>{s.chaosBoost=4;},
     look:{body:'#2a1a4a',belly:'#00ffd5',horn:'#ff2bd6',acc:'#00ffd5',tip:'#ff2bd6',horns:'small',ears:'fin',tail:'flame',extra:'glitch',scale:[1,1,1],glowEyes:true},
     cost:1500,unlock:{t:'Wähle insgesamt 15 Chaos-Karten',ok:m=>m.st.chaos>=15,prog:m=>`${Math.min(15,m.st.chaos)} / 15`}},
@@ -692,49 +692,49 @@ const BIOMES=[
     boss:'Pharao Schleimhotep',bossTint:[1.3,1.1,0.5],music:{bpm:140,key:-3,wave:'sawtooth',bass:[45,45,46,45,52,52,53,52,45,45,46,45,50,49,48,46],lead:[69,0,70,0,73,0,74,0,76,0,74,73,0,70,0,69,0,0,73,0,74,76,0,77,0,76,74,0,73,0,70,0]},
     weather:[{id:'clear',name:'☀️ Brütende Hitze',dur:[30,45]},{id:'sand',name:'🌪️ Sandsturm',dur:[18,25],desc:'Der Wind schiebt alles vor sich her!'}],
     events:['quicksand','fruit','goldslime','mummies','shrine','batswarm','cocoon'],
-    unlock:{t:'Überlebe 5:00 im Dschungel',ok:m=>(m.st.bestT.jungle||0)>=300}},
+    unlock:{t:'Überlebe 2:30 im Dschungel',ok:m=>(m.st.bestT.jungle||0)>=150}},
   {id:'reef',name:'Korallenriff',emoji:'🐠',desc:'Türkise Lagune, Strömungen und Quallen.',diff:2.1,reward:1.9,grad:'linear-gradient(135deg,#3ad1d1,#1a6fb8)',
     sky:0x8fe6f0,fogN:48,fogF:160,hemi:[0xd8fbff,0x2a8a9a,1.35],sun:[0xf0ffff,1.8],tint:[0.8,1.1,1.25],w:{slime:1.4,spiky:1.2,eye:0.8,brute:0.8,charger:1,bomber:0.6,ghost:1},
     boss:'Königin Qualla',bossTint:[1,1,1],music:{bpm:126,key:4,wave:'triangle',bass:[45,45,52,45,47,47,54,47,42,42,49,42,44,44,51,44],lead:[73,0,76,0,80,0,78,76,0,73,0,71,73,0,0,0,76,0,78,0,80,0,83,80,0,78,0,76,78,0,0,0]},
     weather:[{id:'lagoon',name:'🌤️ Ruhige Lagune',dur:[30,45]},{id:'current',name:'🌊 Starke Strömung',dur:[18,25],desc:'Die Strömung treibt alle vor sich her!'}],
     events:['jelly','fruit','goldslime','bubbles','shrine','batswarm','cocoon'],
-    unlock:{t:'Überlebe 5:00 in den Wüstenruinen',ok:m=>(m.st.bestT.desert||0)>=300}},
+    unlock:{t:'Überlebe 2:30 in den Wüstenruinen',ok:m=>(m.st.bestT.desert||0)>=150}},
   {id:'frost',name:'Frostgipfel',emoji:'🏔️',desc:'Blizzards und rollende Lawinen.',diff:2.6,reward:2.3,grad:'linear-gradient(135deg,#bfe9ff,#5b8fd6)',
     sky:0xcfe6ff,fogN:45,fogF:150,hemi:[0xeef8ff,0x6a88b0,1.45],sun:[0xf0f6ff,1.7],tint:[0.8,0.95,1.25],w:{slime:1,spiky:0.8,eye:1,brute:1.6,charger:1,bomber:0.6},
     boss:'Frostbeule der Große',bossTint:[0.6,1.0,1.6],music:{bpm:132,key:2,wave:'triangle',bass:[45,45,52,45,41,41,48,41,43,43,50,43,40,40,47,40],lead:[76,0,0,74,0,72,0,71,72,0,0,0,69,0,0,0,76,0,79,0,77,0,76,74,72,0,0,0,71,0,0,0]},
     weather:[{id:'calm',name:'🌨️ Leichter Schnee',dur:[30,45]},{id:'blizzard',name:'❄️ Blizzard',dur:[18,24],desc:'Alle werden langsamer – Gegner noch mehr!'}],
     events:['avalanche','fruit','goldslime','iceshards','shrine','batswarm','cocoon'],
-    unlock:{t:'Überlebe 5:00 im Korallenriff',ok:m=>(m.st.bestT.reef||0)>=300}},
+    unlock:{t:'Überlebe 2:30 im Korallenriff',ok:m=>(m.st.bestT.reef||0)>=150}},
   {id:'shroom',name:'Pilzhöhle',emoji:'🍄',desc:'Leuchtpilze, Sporenwolken und Dunkelheit.',diff:3.1,reward:2.7,grad:'linear-gradient(135deg,#8a5aff,#2a1a3a)',
     sky:0x1a1028,fogN:30,fogF:110,hemi:[0xc9b0ff,0x2a1a3a,1.25],sun:[0xd8c0ff,1.5],tint:[1.05,0.85,1.2],w:{slime:1,spiky:0.8,eye:1,brute:1,charger:0.8,bomber:1.8,shaman:1.2},
     boss:'Fürst Sporus',bossTint:[1,1,1],music:{bpm:118,key:-2,wave:'triangle',bass:[45,0,45,48,0,45,43,0,41,0,41,45,0,41,40,0],lead:[69,0,0,72,0,0,71,0,69,0,0,0,64,0,0,0,69,0,0,72,0,0,74,0,76,0,74,0,72,0,0,0]},
     weather:[{id:'glow',name:'✨ Leuchtsporen',dur:[30,40]},{id:'spores',name:'🍄 Sporenregen',dur:[18,24],desc:'Platzende Sporen – Gegner erwischt es härter!'},{id:'dark',name:'🌑 Finsternis',dur:[16,22],desc:'Du siehst kaum noch etwas …'}],
     events:['mushbloom','fruit','goldslime','shrine','batswarm','cocoon'],
-    unlock:{t:'Überlebe 5:00 im Frostgipfel',ok:m=>(m.st.bestT.frost||0)>=300}},
+    unlock:{t:'Überlebe 2:30 im Frostgipfel',ok:m=>(m.st.bestT.frost||0)>=150}},
   {id:'volcano',name:'Vulkan',emoji:'🌋',desc:'Lavaregen und glühende Erde.',diff:3.8,reward:3.2,grad:'linear-gradient(135deg,#ff7a1a,#5a1414)',
     sky:0x4a2020,fogN:40,fogF:130,hemi:[0xffb08a,0x3a1010,1.2],sun:[0xffa060,1.8],tint:[1.3,0.85,0.7],w:{slime:0.9,spiky:1.2,eye:1,brute:1.2,charger:1,bomber:1.8},
     boss:'Magmax',bossTint:[1.6,0.6,0.3],music:{bpm:156,key:-5,wave:'sawtooth',bass:[45,45,57,45,46,46,58,46,45,45,57,45,43,43,44,46],lead:[69,70,0,69,0,72,0,70,69,0,65,0,64,0,0,0,69,70,0,69,0,74,0,72,70,0,69,0,70,0,0,0]},
     weather:[{id:'smoke',name:'🌫️ Rauchig',dur:[28,40]},{id:'erupt',name:'🌋 Ausbruch!',dur:[14,20],desc:'Lavabrocken regnen vom Himmel!'}],
     events:['lavacrack','fruit','goldslime','firewave','shrine','batswarm','cocoon'],
-    unlock:{t:'Überlebe 5:00 im Frostgipfel',ok:m=>(m.st.bestT.frost||0)>=300}},
+    unlock:{t:'Überlebe 2:30 im Frostgipfel',ok:m=>(m.st.bestT.frost||0)>=150}},
   {id:'sky',name:'Wolkenstadt',emoji:'☁️',desc:'Schwebende Tempel, Sturmböen und Donner.',diff:4.6,reward:4.1,grad:'linear-gradient(135deg,#bfe0ff,#ffc7e6)',
     sky:0xbfe0ff,fogN:55,fogF:180,hemi:[0xffffff,0xc7b0ff,1.45],sun:[0xfff6e6,2.0],tint:[1,1,1.1],w:{slime:0.8,spiky:1,eye:1.4,brute:1,charger:1,bomber:0.8,bat:1.4},
     boss:'Donnervogel Zappzapp',bossTint:[1,1,1],music:{bpm:150,key:5,wave:'square',bass:[45,45,57,45,50,50,62,50,47,47,59,47,52,52,64,52],lead:[81,0,0,79,81,0,84,0,83,0,79,0,76,0,0,0,81,0,0,79,81,0,88,0,86,0,84,0,83,0,0,0]},
     weather:[{id:'breeze',name:'🌤️ Lauer Wind',dur:[28,40]},{id:'gust',name:'💨 Sturmböen',dur:[16,22],desc:'Böen wirbeln alles durcheinander!'},{id:'thunder',name:'⛈️ Donnerwolken',dur:[18,24],desc:'Blitze treffen alle – auch dich!'}],
     events:['balloons','fruit','goldslime','shrine','batswarm','cocoon'],
-    unlock:{t:'Überlebe 5:00 im Vulkan',ok:m=>(m.st.bestT.volcano||0)>=300}},
+    unlock:{t:'Überlebe 2:30 im Vulkan',ok:m=>(m.st.bestT.volcano||0)>=150}},
   {id:'chaos',name:'Chaos-Dimension',emoji:'🌀',desc:'Nichts ist hier normal. Absolut nichts.',diff:5.5,reward:5,grad:'linear-gradient(135deg,#ff3ad1,#3a1a8a,#00d5ff)',
     sky:0x12081f,fogN:45,fogF:140,hemi:[0xcdbcff,0x3a1d5c,1.3],sun:[0xfff0dd,1.7],tint:[1,1,1],rainbow:true,w:{slime:1,spiky:1,eye:1.2,brute:1.2,charger:1.2,bomber:1.2},
     boss:'Der Glitchkönig',bossTint:[0.7,1.6,1.6],music:{bpm:164,key:1,wave:'square',bass:[45,57,45,57,48,60,48,60,43,55,43,55,50,62,52,64],lead:[81,0,76,0,72,0,76,79,81,0,84,0,83,79,76,0,81,0,76,0,72,74,76,0,79,0,83,0,84,0,88,0]},
     weather:[{id:'glitch',name:'👾 Glitch-Sturm',dur:[20,30]},{id:'glitch2',name:'🌈 Realitätsbruch',dur:[20,30]}],
     events:['glitchmod','fruit','goldslime','glitchmod','shrine','batswarm','cocoon'],
-    unlock:{t:'Überlebe 5:00 im Vulkan',ok:m=>(m.st.bestT.volcano||0)>=300}},
+    unlock:{t:'Überlebe 2:30 im Vulkan',ok:m=>(m.st.bestT.volcano||0)>=150}},
   {id:'scrap',name:'Schrottplatz',emoji:'🔩',desc:'Rost, Säureregen und Magnetstürme.',diff:6.5,reward:6,grad:'linear-gradient(135deg,#c87a3a,#3a3430)',
     sky:0xb89a7a,fogN:42,fogF:140,hemi:[0xffe0c0,0x4a3a2a,1.3],sun:[0xffd0a0,1.8],tint:[1.1,0.95,0.8],w:{slime:0.8,spiky:1,eye:1,brute:1.4,charger:1.2,bomber:1.2,turret:1.6,mole:1.2},
     boss:'Robo-Rumpel',bossTint:[1,1,1],music:{bpm:144,key:-4,wave:'sawtooth',bass:[45,45,45,57,45,45,48,46,45,45,45,57,43,43,44,46],lead:[69,0,69,0,72,69,0,67,69,0,0,0,64,65,0,64,69,0,69,0,74,72,0,70,69,0,0,0,76,74,72,70]},
     weather:[{id:'rust',name:'🟫 Rostiger Dunst',dur:[28,40]},{id:'acid',name:'☣️ Säureregen',dur:[16,22],desc:'Säurepfützen fressen sich durch alles!'},{id:'magnet',name:'🧲 Magnetsturm',dur:[14,20],desc:'Alles wird zu dir gezogen – Kristalle UND Gegner!'}],
     events:['scrapbots','fruit','goldslime','shrine','batswarm','cocoon'],
-    unlock:{t:'Überlebe 5:00 in der Chaos-Dimension',ok:m=>(m.st.bestT.chaos||0)>=300}},
+    unlock:{t:'Überlebe 2:30 in der Chaos-Dimension',ok:m=>(m.st.bestT.chaos||0)>=150}},
 ];
 const biomeById=id=>BIOMES.find(b=>b.id===id)||BIOMES[0];
 const biomeUnlocked=b=>!b.unlock||b.unlock.ok(meta);
@@ -1112,8 +1112,8 @@ const shrineGeo=merge([part(new THREE.TorusGeometry(2.2,0.18,6,32),'#8d8a9a',[0,
 
 // ================= RUN STATE =================
 let state='menu';
-let T=0, kills=0, level=1, xp=0, xpNeed=0, pendingLevels=0, chestPending=0, rerolls=0, revives=0, bossKills=0, runCoins=0, chaosPicked=0;
-let aliveCount=0, spawnAcc=0, nextSwarm=40, nextBoss=150, shake=0, eliteT=0, eventT=40, timeStop=0, slowmo=0, won=false, finalBoss=false, announced5=false;
+let T=0, T2=0, lvCd=0, kills=0, level=1, xp=0, xpNeed=0, pendingLevels=0, chestPending=0, rerolls=0, revives=0, bossKills=0, runCoins=0, chaosPicked=0;
+let aliveCount=0, spawnAcc=0, nextSwarm=50, nextBoss=100, shake=0, eliteT=0, eventT=40, timeStop=0, slowmo=0, won=false, finalBoss=false, announced5=false;
 let curBiome=BIOMES[0], curChar=CHARS[0], diff=1;
 let lastWx=-1, lastEv=null, lastEv2=null; function nextEventId(){ const L=curBiome.events.concat(EXTRA_EVENTS); let id=pick(L), n=0; while((id===lastEv||id===lastEv2)&&n++<12) id=pick(L); lastEv2=lastEv; lastEv=id; return id; }
 let weatherIdx=0, weatherT=30, wind={x:0,z:0}, glitchMod=null, glitchT=0;
@@ -1135,7 +1135,7 @@ function resetRun(){
   const sw=ch.start==='random'?pick(Object.keys(WEAPONS)):ch.start; if(WEAPONS[sw]) W[sw]={lvl:1,mul:1,t:0.5};
   Object.assign(P,{x:0,z:0,face:0,iframe:1,hurtT:0,hp:stats.maxHp,recoil:0,target:null,hamT:-1,shieldT:0,shield:false,buffs:{}});
   T=0;kills=0;level=1;xp=0;xpNeed=needFor(1);pendingLevels=0;chestPending=0;rerolls=2+ML('reroll')+(ch.id==='glitch'?1:0);revives=ML('revive');bossKills=0;runCoins=0;chaosPicked=0;
-  aliveCount=0;spawnAcc=0;nextSwarm=40;nextBoss=150;shake=0;eliteT=0;eventT=rand(30,45);timeStop=0;slowmo=0;won=false;finalBoss=false;announced5=false;
+  aliveCount=0;spawnAcc=0;nextSwarm=50;nextBoss=100;lvCd=0;T2=0;shake=0;eliteT=0;eventT=rand(22,32);timeStop=0;slowmo=0;won=false;finalBoss=false;announced5=false;
   weatherIdx=0; weatherT=rand(...b.weather[0].dur); wind={x:0,z:0}; glitchMod=null; glitchT=0; applyWeather(true);
   freeEn.length=0; for(const e of enemies){e.alive=false;freeEn.push(e);}
   for(const a of [projs,ebullets,drops,parts,glows,beams,teles,puddles,torns,bombs,cocos,snowballs,zones]) a.length=0;
@@ -1213,10 +1213,10 @@ function randomEnemyNear(x,z,R){ const arr=[]; forNear(x,z,R,e=>{ if(arr.length<
 function spawnEnemy(type,x,z,elite=false){
   if(aliveCount>=MAX_EN) return null; const d=EDEF[type];
   let e=freeEn.pop(); if(!e){ e={}; enemies.push(e); }
-  const hm=(1+T/45*0.4)*stats.enemyHp*diff*(elite?6:1)*(glitchMod==='mini'?0.6:1);
+  const hm=(1+T2/45*0.4)*stats.enemyHp*diff*(elite?6:1)*(glitchMod==='mini'?0.6:1);
   const sc=(elite?1.5:1)*(glitchMod==='mini'?0.6:glitchMod==='big'?1.4:1);
   const tint=curBiome.rainbow?new THREE.Color().setHSL(Math.random(),0.8,0.6).multiplyScalar(1.6):new THREE.Color(...curBiome.tint);
-  Object.assign(e,{type,def:d,x,z,kx:0,kz:0,hp:d.hp*hm,maxHp:d.hp*hm,r:d.r*sc,sc,spd:d.spd*stats.enemySpd*rand(0.9,1.12)*(elite?0.85:1),dmg:d.dmg*(1+T/300)*(1+(diff-1)*0.45)*(elite?1.5:1),alive:true,boss:false,flash:0,sawCd:0,ph:Math.random()*10,shootT:rand(1.5,3.5),elite,ry:0,
+  Object.assign(e,{type,def:d,x,z,kx:0,kz:0,hp:d.hp*hm,maxHp:d.hp*hm,r:d.r*sc,sc,spd:d.spd*stats.enemySpd*rand(0.9,1.12)*(elite?0.85:1),dmg:d.dmg*(1+T2/300)*(1+(diff-1)*0.45)*(elite?1.5:1),alive:true,boss:false,flash:0,sawCd:0,ph:Math.random()*10,shootT:rand(1.5,3.5),elite,ry:0,
     slowF:0,frz:0,burn:0,burnDps:0,burnTk:0,ntk:0,tint,st:'walk',stT:rand(1,3),dx:0,dz:0,fuse:-1,gold:false,life:0,hidden:false,aff:null,healT:rand(2,4),els:{},innate:null,rxCd:0,vuln:0,vulnM:1,fear:0,slowT:0,slowV:0,fc:0,stun:0,hitT:0});
   if(Math.random()<0.22) e.innate=BIOME_EL[curBiome.id]||pick(ELS);
   if(type==='mole'){ e.st='under'; e.hidden=true; }
@@ -1231,20 +1231,20 @@ function spawnPos(minD=26,maxD=33){ const zk=(typeof camZoom!=='undefined'&&camZ
   return [-P.x*0.5,-P.z*0.5];
 }
 function pickType(){
-  const bw=curBiome.w; const w={slime:1*bw.slime, spiky:T>25?(0.45+T/220)*bw.spiky:0, eye:T>55?(0.25+T/450)*bw.eye:0, brute:T>95?(0.1+T/1100)*bw.brute:0, charger:T>70?(0.15+T/700)*bw.charger:0, bomber:T>120?(0.1+T/900)*bw.bomber:0, bat:T>40?(0.12+T/900)*(bw.bat??1):0, splitter:T>60?(0.1+T/900)*(bw.splitter??1):0, ghost:T>80?(0.08+T/1000)*(bw.ghost??1):0, mole:T>100?(0.06+T/1200)*(bw.mole??1):0, shaman:T>110?(0.04+T/2200)*(bw.shaman??1):0, turret:T>140?(0.03+T/2600)*(bw.turret??1):0};
+  const bw=curBiome.w; const w={slime:1*bw.slime, spiky:T2>25?(0.45+T2/220)*bw.spiky:0, eye:T2>55?(0.25+T2/450)*bw.eye:0, brute:T2>95?(0.1+T2/1100)*bw.brute:0, charger:T2>70?(0.15+T2/700)*bw.charger:0, bomber:T2>120?(0.1+T2/900)*bw.bomber:0, bat:T2>40?(0.12+T2/900)*(bw.bat??1):0, splitter:T2>60?(0.1+T2/900)*(bw.splitter??1):0, ghost:T2>80?(0.08+T2/1000)*(bw.ghost??1):0, mole:T2>100?(0.06+T2/1200)*(bw.mole??1):0, shaman:T2>110?(0.04+T2/2200)*(bw.shaman??1):0, turret:T2>140?(0.03+T2/2600)*(bw.turret??1):0};
   let tot=0; for(const k in w) tot+=w[k]; let r=Math.random()*tot; for(const k in w){ r-=w[k]; if(r<=0) return k; } return 'slime';
 }
 function director(dt){
-  spawnAcc+=dt*(0.9+T*0.028+Math.pow(T/60,1.6)*0.5)*stats.spawnMul*(1+(diff-1)*0.12);
+  spawnAcc+=dt*(0.9+T2*0.028+Math.pow(T2/60,1.6)*0.5)*stats.spawnMul*(1+(diff-1)*0.12);
   while(spawnAcc>=1){ spawnAcc--; const ty=pickType(); if(ty==='bat'){ const [x,z]=spawnPos(); for(let i=0;i<5;i++) spawnEnemy('bat',x+rand(-1.5,1.5),z+rand(-1.5,1.5)); spawnAcc-=1.5; } else if(ty==='turret'){ const [x,z]=spawnPos(11,17); spawnEnemy('turret',x,z); } else { const [x,z]=spawnPos(); spawnEnemy(ty,x,z); } }
-  if(T>90){ eliteT-=dt; if(eliteT<=0){ eliteT=rand(18,28); const [x,z]=spawnPos(); const e=spawnEnemy(pick(['slime','spiky','brute','charger','splitter','ghost']),x,z,true); if(e) toast(`✨ Elite-Monster: <b style="color:${AFFIX[e.aff][1]}">${AFFIX[e.aff][0]}</b>`); } }
-  if(T>=nextSwarm){ nextSwarm+=40; const n=Math.min(40,18+Math.floor(T/12)); const type=T>130&&Math.random()<0.5?'spiky':'slime';
+  if(T2>90){ eliteT-=dt; if(eliteT<=0){ eliteT=rand(18,28); const [x,z]=spawnPos(); const e=spawnEnemy(pick(['slime','spiky','brute','charger','splitter','ghost']),x,z,true); if(e) toast(`✨ Elite-Monster: <b style="color:${AFFIX[e.aff][1]}">${AFFIX[e.aff][0]}</b>`); } }
+  if(T2>=nextSwarm){ nextSwarm+=60; const n=Math.min(40,18+Math.floor(T2/12)); const type=T2>130&&Math.random()<0.5?'spiky':'slime';
     for(let i=0;i<n;i++){ const a=i/n*TAU; let x=P.x+Math.cos(a)*21, z=P.z+Math.sin(a)*21; const L=Math.hypot(x,z); if(L>ARENA-2){x*=(ARENA-2)/L;z*=(ARENA-2)/L;} spawnEnemy(type,x,z); }
     banner('SCHWARM!'); }
-  if(T>=nextBoss && !boss && !won){ const isFinal=nextBoss>=600; nextBoss+=150; spawnBoss(isFinal); }
-  if(T>=300 && !announced5){ announced5=true; const idx=BIOMES.indexOf(curBiome); const nb=BIOMES[idx+1]; if(nb && !biomeUnlocked(nb)){ meta.st.bestT[curBiome.id]=Math.max(meta.st.bestT[curBiome.id]||0,T); saveMeta(); banner('NEUES BIOM!',`${nb.emoji} ${nb.name} freigeschaltet`); sfx('win'); } }
+  if(T>=nextBoss && !boss && !won){ const isFinal=nextBoss>=300; nextBoss+=100; spawnBoss(isFinal); }
+  if(T>=150 && !announced5){ announced5=true; const idx=BIOMES.indexOf(curBiome); const nb=BIOMES[idx+1]; if(nb && !biomeUnlocked(nb)){ meta.st.bestT[curBiome.id]=Math.max(meta.st.bestT[curBiome.id]||0,T); saveMeta(); banner('NEUES BIOM!',`${nb.emoji} ${nb.name} freigeschaltet`); sfx('win'); } }
   // events
-  eventT-=dt; if(eventT<=0){ eventT=rand(32,46); runEvent(nextEventId()); }
+  eventT-=dt; if(eventT<=0){ eventT=rand(24,34); runEvent(nextEventId()); }
   // weather
   weatherT-=dt; if(weatherT<=0){ { const n=curBiome.weather.length; let ni=weatherIdx; if(n>1) while(ni===weatherIdx||(n>2&&ni===lastWx)) ni=(Math.random()*n)|0; lastWx=weatherIdx; weatherIdx=ni; } const w=curBiome.weather[weatherIdx]; weatherT=rand(...w.dur); applyWeather(false); }
   updateWeather(dt);
@@ -1637,7 +1637,7 @@ function updateDrops(dt){
   const mag=stats.magnet;
   for(let i=drops.length-1;i>=0;i--){ const g=drops[i]; const dx=P.x-g.x,dz=P.z-g.z,d=Math.hypot(dx,dz)||0.001;
     if(g.pull||d<mag){ g.pull=true; g.spd=Math.min(40,g.spd+55*dt); g.x+=dx/d*Math.min(d,g.spd*dt); g.z+=dz/d*Math.min(d,g.spd*dt); }
-    if(d<0.9){ if(g.coin){ runCoins+=Math.max(1,Math.round(curBiome.reward*(P.buffs.gold>0?1:1))); sfx('coin'); } else { xp+=g.v*stats.xpMul*(PU.xp2>0?2:1); gemCombo++; gemComboT=0.6; sfx('gem',gemCombo); while(xp>=xpNeed){ xp-=xpNeed; level++; xpNeed=needFor(level); pendingLevels++; } }
+    if(d<0.9){ if(g.coin){ runCoins+=Math.max(1,Math.round(curBiome.reward*(P.buffs.gold>0?1:1))); sfx('coin'); } else { xp+=g.v*stats.xpMul*(PU.xp2>0?2:1); gemCombo++; gemComboT=0.6; sfx('gem',gemCombo); if(xp>xpNeed*2.5) xp=xpNeed*2.5; }
       drops[i]=drops[drops.length-1]; drops.pop(); } }
   if(glitchMod==='xprain' && Math.random()<dt*6) dropXP(P.x+rand(-8,8),P.z+rand(-8,8),Math.round(1+T/120));
 }
@@ -1688,7 +1688,8 @@ function update(dt){
   updateDrops(dt);
   updatePickups(dt);
   if(!EV.c10&&level>=10){ EV.c10=true; evoPending=true; } if(!EV.c25&&level>=25){ EV.c25=true; if(EV.stage<3&&EV.small!==2) evoPending=true; }
-  if(state==='play' && !won){ if(pendingLevels>0){ pendingLevels--; openLevelUp(false); } else if(evoPending){ openEvo(); } else if(chestPending>0){ chestPending--; openLevelUp(true); } }
+  T2=T*2; if(state==='play'){ lvCd-=dt; if(xp>=xpNeed&&pendingLevels===0&&lvCd<=0){ xp-=xpNeed; level++; xpNeed=needFor(level); pendingLevels=1; } }
+  if(state==='play' && !won && lvCd<=0){ if(pendingLevels>0){ pendingLevels--; lvCd=0.9; openLevelUp(false); } else if(evoPending){ lvCd=1; openEvo(); } else if(chestPending>0){ chestPending--; lvCd=1.4; openLevelUp(true); } }
 }
 
 // ================= POWER-UPS =================
@@ -2309,7 +2310,7 @@ function updateHUD(){
   setW('hpfill',P.hp/stats.maxHp); setT('hptxt',Math.max(0,Math.ceil(P.hp))+' / '+Math.round(stats.maxHp));
   setW('xpfill',xp/xpNeed); setT('lvnum',''+level);
   setT('timer',fmtT(T)); setT('kills','💀 '+kills); setT('coins','🪙 '+runCoins);
-  let bi=''; if(boss) bi=''; else if(won) bi='🏆 Biom bezwungen!'; else { const r=nextBoss-T; bi=(nextBoss>=600?'👑 Final-Boss in ':'💀 Boss in ')+fmtT(Math.max(0,r)); }
+  let bi=''; if(boss) bi=''; else if(won) bi='🏆 Biom bezwungen!'; else { const r=nextBoss-T; bi=(nextBoss>=300?'👑 Final-Boss in ':'💀 Boss in ')+fmtT(Math.max(0,r)); }
   if(timeStop>0) bi='⏳ ZEITSTOPP '+timeStop.toFixed(1)+'s';
   setT('bossIn',bi);
   const sh=P.shield?'block':'none'; if(hudCache.sh!==sh){ hudCache.sh=sh; $('shieldIco').style.display=sh; }
@@ -2392,7 +2393,7 @@ let unlockSnap=null;
 function startRun(){
   initAudio(); unlockSnap={cc:CHARS.filter(charCond).map(c=>c.id),c:CHARS.filter(charUnlocked).map(c=>c.id),b:BIOMES.filter(biomeUnlocked).map(b=>b.id)};
   clearField(); setPlayerModel(curChar); resetRun(); state='play'; showOnly(null);
-  $('hud').classList.add('show'); camX=0;camZ=0; hudCache={}; banner(curBiome.name.toUpperCase(),curChar.name+' · Überlebe 10 Minuten!'); saveMeta();
+  $('hud').classList.add('show'); camX=0;camZ=0; hudCache={}; banner(curBiome.name.toUpperCase(),curChar.name+' · Überlebe 5 Minuten!'); saveMeta();
   if(isTouch && !meta.seen.joy){ $('joyHint').style.display='block'; }
 }
 function gameOver(win){
@@ -2583,7 +2584,7 @@ resetRun=function(){ _resetRun();
   const ml=mastLvl(curChar.id); if(ml){ stats.dmgMul*=1+0.015*ml; stats.maxHp+=2*ml; }
   if(dailyMode) dailyMode.mod.f(stats);
   stats.maxHp=Math.round(stats.maxHp); P.hp=stats.maxHp;
-  Object.assign(X,{cause:'',healBud:stats.maxHp*0.5,banLeft:3,mini:[75,225],merchT:[200,430],curseT:[320],chal:null,chalNext:110,tookHit:false,setB:{},setCnt:{},setT:0,lastSetMsg:{},wallT:60,bossAtk:3,bossAtk2:6,endlessNext:0,chalDone:0,miniKills:0,merchCost:0,resetArm:false});
+  Object.assign(X,{cause:'',healBud:stats.maxHp*0.5,banLeft:3,mini:[50,160],merchT:[120,235],curseT:[195],chal:null,chalNext:70,tookHit:false,setB:{},setCnt:{},setT:0,lastSetMsg:{},wallT:40,bossAtk:3,bossAtk2:6,endlessNext:0,chalDone:0,miniKills:0,merchCost:0,resetArm:false});
   X.banned=new Set(); X.objs.forEach(o=>scene.remove(o.m)); X.objs.length=0; $('chal').classList.remove('on');
   X.tips=meta.runs<3?[[2,'🕹️ Bewegen mit Joystick oder WASD – angreifen geht automatisch!'],[12,'💎 Sammle XP-Kristalle für Level-Ups.'],[35,'⚗️ Zwei Elemente auf einem Gegner lösen eine Reaktion aus!'],[60,'🔴 Rote Kreise am Boden: Da schlägt gleich etwas ein – ausweichen!'],[95,'🧬 Ab Level 10 entwickelt sich dein Monster weiter.'],[130,'🛒 Händler und Herausforderungen bringen Extra-Truhen.']]:[];
   if(dailyMode) setTimeout(()=>toast(`📅 Tageslauf: <b>${dailyMode.mod.n}</b> – ${dailyMode.mod.d}`,'#ffd23f'),1500);
@@ -2598,7 +2599,7 @@ hurt=function(d,src){ const h0=P.hp, c0=X.cause; if(state==='play'&&P.iframe<=0)
 // ================= ENEMY VARIANTS + MINI-BOSSES =================
 const _spawnEnemy=spawnEnemy;
 spawnEnemy=function(type,x,z,elite=false){ const e=_spawnEnemy(type,x,z,elite); if(!e) return e; e.vet=false; e.mini=false;
-  if(T>360&&!elite&&type!=='bat'&&Math.random()<Math.min(0.35,(T-360)/700)){ e.vet=true; e.hp*=1.7; e.maxHp*=1.7; e.spd*=1.12; e.dmg*=1.2; e.sc*=1.12; e.r*=1.12; e.tint=e.tint.clone().lerp(new THREE.Color(1.1,0.15,0.25),0.45); }
+  if(T>180&&!elite&&type!=='bat'&&Math.random()<Math.min(0.35,(T-180)/350)){ e.vet=true; e.hp*=1.7; e.maxHp*=1.7; e.spd*=1.12; e.dmg*=1.2; e.sc*=1.12; e.r*=1.12; e.tint=e.tint.clone().lerp(new THREE.Color(1.1,0.15,0.25),0.45); }
   return e; };
 function spawnMini(){ const ty=pick(['brute','charger','splitter','shaman']); const [x,z]=spawnPos(14,18); const e=spawnEnemy(ty,x,z,true); if(!e) return;
   e.mini=true; e.hp*=4; e.maxHp*=4; e.sc*=1.45; e.r*=1.45; e.dmg*=1.2; banner('MINI-BOSS!',(ENAME[ty]||ty)+' – Truhe als Belohnung'); sfx('boss'); addShake(0.4); vib(120); }
@@ -2620,7 +2621,7 @@ bossDie=function(){ const b=boss; let endlessCont=false; if(b&&b.final&&meta.end
   meta.cry+=b&&b.final?3:1; _bossDie(); musicProfile=curBiome.music;
   if(endlessCont){ if(!meta.st.wins[curBiome.id]){ meta.st.wins[curBiome.id]=true; saveMeta(); } banner('ENDLOS!','Es geht weiter – wie lange hältst du durch?'); }
   toast(`💠 +${b&&b.final?3:1} Boss-Kristall`,'#7fd0ff'); };
-const bDmg=()=>(1+T/300)*(1+(diff-1)*0.4);
+const bDmg=()=>(1+T/150)*(1+(diff-1)*0.4);
 function bShoot(x,z,a,sp,dmg,life=5){ ebullets.push({x,y:1.6,z,vx:Math.cos(a)*sp,vz:Math.sin(a)*sp,life,dmg}); }
 function bFan(b,n,spread,sp,dmg){ const a0=Math.atan2(P.z-b.z,P.x-b.x); for(let i=0;i<n;i++) bShoot(b.x,b.z,a0+(i-(n-1)/2)*spread,sp,dmg); sfx('shoot'); }
 function bRing(b,n,sp,dmg,off=0){ for(let i=0;i<n;i++) bShoot(b.x,b.z,i/n*TAU+off,sp,dmg); }
@@ -2701,7 +2702,7 @@ function updateSpecials(dt){
       else { const cu=pick(CURSES); cu.f(stats); chestPending+=2; toast(`🌀 FLUCH: <b>${cu.t}</b> · +2 Truhen`,'#d61f45'); sfx('chaos'); flashScreen(0.3); explode(o.x,o.z,4,0,'#ff3ad1',0); gone=true; } }
     if(gone){ scene.remove(o.m); X.objs.splice(i,1); } } }
 function updateChallenges(dt){
-  if(!X.chal&&T>=X.chalNext&&!boss){ X.chalNext=T+rand(100,130);
+  if(!X.chal&&T>=X.chalNext&&!boss){ X.chalNext=T+rand(60,80);
     X.chal=Math.random()<0.55?{type:'kill',need:Math.round(40+T/5),k0:kills,t:25}:{type:'nohit',t:20}; X.tookHit=false; banner('HERAUSFORDERUNG!',X.chal.type==='kill'?`Besiege ${X.chal.need} Monster in 25 s`:'Nimm 20 s lang keinen Schaden'); sfx('event'); }
   const c=X.chal; const el=$('chal'); if(!c){ el.classList.remove('on'); return; } el.classList.add('on'); c.t-=dt;
   let ok=false, fail=false;
@@ -2722,7 +2723,7 @@ update=function(dt){ const h0=P.hp, rv=revives; _update(dt); if(state!=='play') 
   if(X.mini.length&&T>=X.mini[0]){ X.mini.shift(); spawnMini(); }
   if(X.merchT.length&&T>=X.merchT[0]){ X.merchT.shift(); addSpecial('merch'); }
   if(X.curseT.length&&T>=X.curseT[0]){ X.curseT.shift(); addSpecial('curse'); }
-  if(T>=X.wallT){ X.wallT+=rand(75,95); if(!boss) spawnWall(); }
+  if(T>=X.wallT){ X.wallT+=rand(45,60); if(!boss) spawnWall(); }
   updateSpecials(dt); updateChallenges(dt); updateSets(dt); checkAchLive(dt);
 };
 
@@ -2733,8 +2734,8 @@ const ACH=[
   {id:'k100',i:'⚔️',n:'Aufräumer',d:'100 Kills in einem Lauf',c:30,f:(s,r)=>r&&r.kills>=100},
   {id:'k500',i:'🗡️',n:'Monster-Mäher',d:'500 Kills in einem Lauf',c:60,f:(s,r)=>r&&r.kills>=500,unl:'Splitter-Karte'},
   {id:'k1500',i:'💀',n:'Massenpanik',d:'1500 Kills in einem Lauf',c:150,f:(s,r)=>r&&r.kills>=1500},
-  {id:'t3',i:'⏱️',n:'Zäh',d:'Überlebe 3:00',c:30,f:()=>bestAny()>=180},
-  {id:'t5',i:'⏰',n:'Ausdauernd',d:'Überlebe 5:00',c:60,f:()=>bestAny()>=300,unl:'Adrenalin-Karte'},
+  {id:'t3',i:'⏱️',n:'Zäh',d:'Überlebe 2:00',c:30,f:()=>bestAny()>=120},
+  {id:'t5',i:'⏰',n:'Ausdauernd',d:'Überlebe 4:00',c:60,f:()=>bestAny()>=240,unl:'Adrenalin-Karte'},
   {id:'win1',i:'🏆',n:'Bezwinger',d:'Besiege einen Final-Boss',c:150,f:(s)=>Object.keys(s.wins).length>=1},
   {id:'lv10',i:'⭐',n:'Aufsteiger',d:'Erreiche Level 10',c:30,f:(s)=>s.maxLv>=10},
   {id:'lv20',i:'🌟',n:'Profi',d:'Erreiche Level 20',c:60,f:(s)=>s.maxLv>=20,unl:'Vampir-Karte'},
@@ -2760,7 +2761,7 @@ const ACH=[
   {id:'rich',i:'💰',n:'Goldmonster',d:'5000 Münzen insgesamt gesammelt',c:100,f:(s)=>s.coinsLife>=5000},
   {id:'tier3',i:'🔥',n:'Wild!',d:'Besiege einen Final-Boss auf Stufe 3+',c:200,f:(s,r)=>r&&r.win&&r.tier>=3},
   {id:'tier5',i:'😈',n:'Albtraum-Bezwinger',d:'Besiege einen Final-Boss auf Stufe 5',c:500,f:(s,r)=>r&&r.win&&r.tier>=5},
-  {id:'end15',i:'♾️',n:'Unendlich',d:'Überlebe 15:00 im Endlos-Modus',c:250,f:(s,r)=>r&&r.endless&&r.T>=900},
+  {id:'end15',i:'♾️',n:'Unendlich',d:'Überlebe 10:00 im Endlos-Modus',c:250,f:(s,r)=>r&&r.endless&&r.T>=600},
   {id:'nohit',i:'🛡️',n:'Unberührbar',d:'Schaffe eine Kein-Treffer-Herausforderung',c:50,f:()=>meta.ach._nohit},
   {id:'merch',i:'🛒',n:'Stammkunde',d:'Kaufe beim Händler',c:30,f:()=>meta.ach._merch},
   {id:'dq5',i:'📅',n:'Fleissig',d:'Erledige 5 Tagesaufgaben',c:100,f:()=>meta.dqDone>=5},
@@ -2781,12 +2782,12 @@ function checkAchLive(dt){ achLiveT-=dt; if(achLiveT>0) return; achLiveT=2; gran
 const DQ_T=[
   {id:'kills',f:r=>({n:`Besiege ${r} Monster`,need:r,src:'kills'}),v:[800,1200,1800]},
   {id:'boss',f:r=>({n:`Besiege ${r} Boss${r>1?'e':''}`,need:r,src:'boss'}),v:[1,2]},
-  {id:'surv',f:r=>({n:`Überlebe ${r}:00 in einem Lauf`,need:r*60,src:'bestT',max:true}),v:[4,6,8]},
+  {id:'surv',f:r=>({n:`Überlebe ${r}:00 in einem Lauf`,need:r*60,src:'bestT',max:true}),v:[2,3,4]},
   {id:'lvl',f:r=>({n:`Erreiche Level ${r}`,need:r,src:'lvl',max:true}),v:[15,20,25]},
   {id:'evo',f:()=>({n:'Erreiche Evolutionsstufe 2',need:2,src:'evo',max:true}),v:[0]},
   {id:'gene',f:r=>({n:`Baue ${r} Gene in einem Lauf ein`,need:r,src:'genes',max:true}),v:[2,3]},
   {id:'chal',f:r=>({n:`Schaffe ${r} Herausforderungen`,need:r,src:'chal'}),v:[2,3]},
-  {id:'char',f:(r,c)=>({n:`Spiele 3:00 mit ${c.emoji} ${c.name}`,need:180,src:'charT',ch:c.id,max:true}),v:[0]}];
+  {id:'char',f:(r,c)=>({n:`Spiele 2:00 mit ${c.emoji} ${c.name}`,need:120,src:'charT',ch:c.id,max:true}),v:[0]}];
 function ensureDQ(){ const key=todayKey(); if(meta.dq&&meta.dq.date===key) return meta.dq; const rnd=seeded(hashStr('dq'+key)); const pool=DQ_T.slice(); const q=[];
   while(q.length<3){ const i=(rnd()*pool.length)|0; const t=pool.splice(i,1)[0]; const v=t.v[(rnd()*t.v.length)|0]; const cs=CHARS.filter(charUnlocked); const c=cs[(rnd()*cs.length)|0]; const o=t.f(v,c); q.push({...o,prog:0,done:false,rw:60+((rnd()*4)|0)*20}); }
   meta.dq={date:key,q}; saveMeta(); return meta.dq; }
@@ -2899,7 +2900,7 @@ window.__mbx={X,have,get boss(){return boss;},hurt:(d)=>hurt(d,null),gameOver:(w
 // ============ MONSTIMORPH ROUND 2: biomes, monsters, sets, modes =====
 // =====================================================================
 if(!meta.mode) meta.mode='normal';
-const MODES={normal:{n:'Normal',i:'🎮',d:'Überlebe 10 Minuten'},rush:{n:'Boss-Rush',i:'👑',d:'5 Bosse hintereinander · Start mit 6 Level-Ups · Münzen ×1.5'},mut:{n:'Mutation',i:'🧬',d:'Start mit 3 Genen · alle 50 s ein Kokon · Gegner +20% Leben'}};
+const MODES={normal:{n:'Normal',i:'🎮',d:'Überlebe 5 Minuten'},rush:{n:'Boss-Rush',i:'👑',d:'5 Bosse hintereinander · Start mit 6 Level-Ups · Münzen ×1.5'},mut:{n:'Mutation',i:'🧬',d:'Start mit 3 Genen · alle 35 s ein Kokon · Gegner +20% Leben'}};
 const runMode=()=>dailyMode?'normal':meta.mode;
 
 // ---------------- new boss models ----------------
@@ -2991,7 +2992,7 @@ function updateGeneSets(dt){ gsT-=dt; if(gsT>0) return; gsT=1;
     if(l>old){ toast(`🧬 <b>Gen-Set ${st.i} ${st.n} (${l})</b>: ${l>=3?st.b3:st.b2}`,'#7ee05a'); sfx('level'); } } }
 
 // ---------------- modes: Boss-Rush & Mutation ----------------
-{ const rr=resetRun; resetRun=function(){ rr(); gsLvl={}; gsT=0; X.mutT=50; X.rushN=0; X.rushWinT=0;
+{ const rr=resetRun; resetRun=function(){ rr(); gsLvl={}; gsT=0; X.mutT=35; X.rushN=0; X.rushWinT=0;
   if(curChar.id==='hueti'){ const a=addCompanion('funki',1), b=addCompanion('mampfi',1); a.lvl=b.lvl=1; }
   if(curChar.id==='glimmi'){ AU.storm={pow:1.4,tk:1,lv:1}; }
   const m=runMode();
@@ -3003,11 +3004,11 @@ function updateGeneSets(dt){ gsT-=dt; if(gsT>0) return; gsT=1;
 { const bd=bossDie; bossDie=function(){ const rush=runMode()==='rush'; if(rush&&boss) boss.final=false; bd(); if(!rush) return; X.rushN++; nextBoss=T+12;
   if(X.rushN>=5){ runCoins=Math.round(runCoins*1.5); meta.ach._rush=1; X.rushWinT=1.5; banner('BOSS-RUSH GESCHAFFT!','Alle 5 Bosse besiegt'); sfx('win'); } else toast(`👑 Boss ${X.rushN}/5 besiegt – der nächste kommt in 12 s!`,'#ffd23f'); }; }
 { const up=update; update=function(dt){ up(dt); if(state!=='play') return; updateGeneSets(dt);
-  if(runMode()==='mut'){ X.mutT-=dt; if(X.mutT<=0){ X.mutT=50; runEvent('cocoon'); } if(T>=300&&!meta.ach._mut){ meta.ach._mut=1; saveMeta(); } }
+  if(runMode()==='mut'){ X.mutT-=dt; if(X.mutT<=0){ X.mutT=35; runEvent('cocoon'); } if(T>=150&&!meta.ach._mut){ meta.ach._mut=1; saveMeta(); } }
   if(curChar.id==='glimmi') for(const k in W) delete W[k];
   if(X.rushWinT>0){ X.rushWinT-=dt; if(X.rushWinT<=0){ X.rushWinT=0; gameOver(true); } } }; }
 ACH.push({id:'rush1',i:'👑',n:'Boss-Rusher',d:'Gewinne einen Boss-Rush',c:200,f:()=>!!meta.ach._rush},
-  {id:'mut1',i:'🧬',n:'Mutant',d:'Überlebe 5:00 im Mutations-Modus',c:120,f:()=>!!meta.ach._mut},
+  {id:'mut1',i:'🧬',n:'Mutant',d:'Überlebe 2:30 im Mutations-Modus',c:120,f:()=>!!meta.ach._mut},
   {id:'gset',i:'🧪',n:'Gen-Kombo',d:'Aktiviere ein 3er-Gen-Set',c:80,f:()=>Object.values(gsLvl).some(v=>v>=3)},
   {id:'bio9',i:'🌍',n:'Neue Welten',d:'Spiele in allen 9 Biomen',c:150,f:()=>BIOMES.every(b=>(meta.st.bestT[b.id]||0)>0)});
 
@@ -3017,7 +3018,7 @@ tierBox.addEventListener('click',e=>{ const b=e.target.closest('[data-mode]'); i
 { const rm=renderMenu; renderMenu=function(){ rm(); if(meta.mode!=='normal') $('chipBiomeN').textContent+=' · '+MODES[meta.mode].i; }; }
 // gene-set info in gene picker
 { const og=openGene; if(typeof og==='function') openGene=function(...a){ const r=og(...a); try{ const el=document.querySelector('#gene .subt'); if(el&&!document.getElementById('gsInfo')) el.insertAdjacentHTML('afterend',`<div id="gsInfo" style="font:800 11px Nunito;color:#fff;text-align:center;margin:4px 0">Gen-Sets: ${GENE_SETS.map(s=>s.i+' '+s.n).join(' · ')} – 2 oder 3 Gene derselben Familie geben Boni</div>`); }catch(_){} return r; }; }
-window.__mbx2={tele:(x,z,R,d,c)=>tele(x,z,R,d,c,()=>{}),addZone:(o)=>zones.push(o),addPuddle:(o)=>puddles.push(o),showTip:(t)=>showTip(t),toast:(t)=>toast(t),setWx:i=>{ weatherIdx=i; applyWeather(false); },setChar:id=>{ curChar=charById(id); setPlayerModel(curChar); },get rushN(){return X.rushN;},GENE_SETS,get gsLvl(){return gsLvl;},MODES,runEvent:(id)=>runEvent(id)};
+window.__mbx2={addXP:(v)=>{ xp+=v; },get xpI(){ return [xp,xpNeed,pendingLevels,lvCd]; },tele:(x,z,R,d,c)=>tele(x,z,R,d,c,()=>{}),addZone:(o)=>zones.push(o),addPuddle:(o)=>puddles.push(o),showTip:(t)=>showTip(t),toast:(t)=>toast(t),setWx:i=>{ weatherIdx=i; applyWeather(false); },setChar:id=>{ curChar=charById(id); setPlayerModel(curChar); },get rushN(){return X.rushN;},GENE_SETS,get gsLvl(){return gsLvl;},MODES,runEvent:(id)=>runEvent(id)};
 
 { const cf=clearField; clearField=function(){ cf(); tipQ.length=0; tipEl.classList.remove('on'); }; }
 let fxDim=1;
