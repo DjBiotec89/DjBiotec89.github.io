@@ -240,6 +240,7 @@ body.evofocus #ind,body.evofocus #dmg,body.evofocus #tipBox,body.evofocus #toast
 @media (max-width:520px){.talb{grid-template-columns:1fr}}
 
 /* ===== VOXEL UI ===== */
+.caff{margin-top:5px;padding:3px 7px;border-radius:8px;background:#e3f7cf;border:2px solid #7ec45a;font:900 12px Nunito;color:#2f6a1f;display:inline-block}.caff.off{background:#f3e6cc;border-color:#c9a46b;color:#8a6a45}.caff .vi{width:1.35em;height:1.35em}
 .vi{display:inline-block;width:1.25em;height:1.25em;vertical-align:-.3em;background-repeat:no-repeat;flex:0 0 auto}
 .dim{background-color:rgba(12,28,20,.72);background-image:linear-gradient(rgba(255,255,255,.035) 2px,transparent 2px),linear-gradient(90deg,rgba(255,255,255,.035) 2px,transparent 2px);background-size:28px 28px}
 .panel{border-radius:14px;background:linear-gradient(45deg,rgba(120,80,20,.04) 25%,transparent 25%,transparent 75%,rgba(120,80,20,.04) 75%),linear-gradient(45deg,rgba(120,80,20,.04) 25%,transparent 25%,transparent 75%,rgba(120,80,20,.04) 75%),var(--cream);background-size:16px 16px,16px 16px,auto;background-position:0 0,8px 8px,0 0;box-shadow:0 0 0 3px #c58a4c,0 0 0 6px var(--ink),0 12px 0 3px rgba(0,0,0,.35),inset 0 4px 0 #fffaf0,inset 0 -4px 0 var(--cream2)}
@@ -3024,7 +3025,7 @@ tierBox.addEventListener('click',e=>{ const b=e.target.closest('[data-mode]'); i
 { const rm=renderMenu; renderMenu=function(){ rm(); if(meta.mode!=='normal') $('chipBiomeN').textContent+=' · '+MODES[meta.mode].i; }; }
 // gene-set info in gene picker
 { const og=openGene; if(typeof og==='function') openGene=function(...a){ const r=og(...a); try{ const el=document.querySelector('#gene .subt'); if(el&&!document.getElementById('gsInfo')) el.insertAdjacentHTML('afterend',`<div id="gsInfo" style="font:800 11px Nunito;color:#fff;text-align:center;margin:4px 0">Gen-Sets: ${GENE_SETS.map(s=>s.i+' '+s.n).join(' · ')} – 2 oder 3 Gene derselben Familie geben Boni</div>`); }catch(_){} return r; }; }
-window.__mbx2={addXP:(v)=>{ xp+=v; },get xpI(){ return [xp,xpNeed,pendingLevels,lvCd]; },tele:(x,z,R,d,c)=>tele(x,z,R,d,c,()=>{}),addZone:(o)=>zones.push(o),addPuddle:(o)=>puddles.push(o),showTip:(t)=>showTip(t),toast:(t)=>toast(t),setWx:i=>{ weatherIdx=i; applyWeather(false); },setChar:id=>{ curChar=charById(id); setPlayerModel(curChar); },get rushN(){return X.rushN;},GENE_SETS,get gsLvl(){return gsLvl;},MODES,runEvent:(id)=>runEvent(id)};
+window.__mbx2={USES:()=>Object.fromEntries(Object.entries(USES).map(([k,v])=>[k,[...v].join(",")])),forceCards:(arr)=>{ choices=arr.map(([kind,key,r])=>kind==="p"?{kind,key,r,p:PASSIVES.find(q=>q.key===key)}:{kind,key,r}); renderCards(); },addXP:(v)=>{ xp+=v; },get xpI(){ return [xp,xpNeed,pendingLevels,lvCd]; },tele:(x,z,R,d,c)=>tele(x,z,R,d,c,()=>{}),addZone:(o)=>zones.push(o),addPuddle:(o)=>puddles.push(o),showTip:(t)=>showTip(t),toast:(t)=>toast(t),setWx:i=>{ weatherIdx=i; applyWeather(false); },setChar:id=>{ curChar=charById(id); setPlayerModel(curChar); },get rushN(){return X.rushN;},GENE_SETS,get gsLvl(){return gsLvl;},MODES,runEvent:(id)=>runEvent(id)};
 
 { const cf=clearField; clearField=function(){ cf(); tipQ.length=0; tipEl.classList.remove('on'); }; }
 let fxDim=1;
@@ -3492,6 +3493,24 @@ const IDLE={blinkT:2,blink:0,dbl:false,actT:3,act:null,t:0,pm:null};
   if(a&&a.k==='joy') S.ry=ry; else { let dr=ry-S.ry; dr=Math.atan2(Math.sin(dr),Math.cos(dr)); S.ry+=dr*ks; }
   S.y+=(y-S.y)*Math.min(1,k*1.8); S.rz+=(rz-S.rz)*k; S.sx+=(sx-S.sx)*k; S.sy+=(sy-S.sy)*k; S.aL+=(armL-S.aL)*k; S.aR+=(armR-S.aR)*k;
   PM.g.rotation.y=S.ry; PM.g.position.y=S.y; PM.inner.position.y=Math.sin(rt*2.6)*0.02; PM.inner.rotation.z=S.rz; PM.inner.scale.set(S.sx,S.sy,S.sx); if(A[0]) A[0].position.y=S.aL; if(A[1]) A[1].position.y=S.aR; }; }
+
+// ---------- which owned skills an item affects ----------
+const STAT_TAGS={area:/AREA\(|AR\(|stats\.area/,dur:/DUR\(|stats\.dur/,big:/projSize|stats\.size/,multi:/multishot/,pierce:/stats\.pierce|pierce:stats/,bounce:/stats\.bounce|bounce:stats/,knock:/stats\.knock|kb:/,chain:/stats\.chain/};
+const GLOBAL_TAGS={dmg:1,crit:1,critd:1,haste:1,glass:1,adren:1,vamp:1};
+const USES={};
+for(const k in WF){ const f=WF[k]; let src=(f.fire?f.fire.toString():'')+(f.update?f.update.toString():''); if(/spawnProj\(/.test(src)) src+=' stats.pierce stats.bounce projSize knock'; USES['w:'+k]=new Set(Object.keys(STAT_TAGS).filter(t=>STAT_TAGS[t].test(src))); }
+USES['w:laser'].add('multi').add('pierce').add('bounce').add('big');
+for(const k in AF){ const f=AF[k]; const src=Object.values(f).filter(v=>typeof v==='function').map(v=>v.toString()).join(' '); USES['a:'+k]=new Set(['area',...Object.keys(STAT_TAGS).filter(t=>STAT_TAGS[t].test(src))]); }
+function affectedBy(pk){ const out=[]; const g=GLOBAL_TAGS[pk];
+  for(const k in W) if(g||(USES['w:'+k]&&USES['w:'+k].has(pk))) out.push(WEAPONS[k].icon);
+  for(const k in AU) if((g&&pk!=='vamp')||(USES['a:'+k]&&USES['a:'+k].has(pk))) out.push(AURAS[k].icon);
+  if(g&&pk!=='haste') for(const c of comps) out.push(COMPS[c.key].icon);
+  return out; }
+function boostsOf(kind,key){ const u=USES[kind+':'+key]; if(!u) return []; const out=[]; for(const pk in have){ if(!have[pk]) continue; if(u.has(pk)){ const p=PASSIVES.find(q=>q.key===pk); if(p) out.push(p.icon); } } return out; }
+{ const ci=cardInfo; cardInfo=function(c){ const i=ci(c);
+  if(c.kind==='p'&&STAT_TAGS[c.key]!==undefined||c.kind==='p'&&GLOBAL_TAGS[c.key]){ const a=affectedBy(c.key); i.desc+=a.length?`<div class="caff">Wirkt auf: ${a.join(' ')}</div>`:`<div class="caff off">Wirkt noch auf nichts von dir</div>`; }
+  else if(c.kind==='w'||c.kind==='a'){ const b=boostsOf(c.kind,c.key); if(b.length) i.desc+=`<div class="caff">Profitiert von: ${b.join(' ')}</div>`; }
+  return i; }; }
 // =====================================================================
 // ============ WEAPON FX OVERHAUL: beams, smoke, projectiles, deaths ==
 // =====================================================================
