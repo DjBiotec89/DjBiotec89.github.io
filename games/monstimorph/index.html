@@ -1919,17 +1919,23 @@ const slotOf={}; // slot -> key
 let geneOffer=[], geneTimers={};
 function resetGenes(){ for(const k in GN) delete GN[k]; for(const k in slotOf) delete slotOf[k]; geneTimers={}; allies.length=0; clearShadowClone(); }
 function dropGene(x,z,key){ spawnPickup('gene',x,z,key||pick(Object.keys(GENES).filter(k=>!GENES[k].boss))); }
-function openGene(keys){ state='genesel'; joyReset();
+const GENE_MAXLV=5; const geneLv=k=>GN[k]?GN[k].lv||1:0;
+function openGene(keys){ state='genesel'; joyReset(); keys=keys.slice();
+  { const up=Object.keys(GN).filter(k=>geneLv(k)<GENE_MAXLV&&!keys.includes(k)); if(up.length&&(keys.length>1?Math.random()<0.6:Math.random()<0.45)){ const k=pick(up); if(keys.length>1) keys[keys.length-1]=k; else keys.push(k); } }
   geneOffer=keys.map(k=>({key:k,r:rollRarity(GENES[k].boss?2:0)}));
-  $('geneCards').innerHTML=geneOffer.map((o,i)=>{ const g=GENES[o.key], r=RAR[o.r]; const cur=slotOf[g.slot]; const known=meta.lex.genes[o.key];
-    return `<button class="card r-${r.id}" data-i="${i}"><div class="rb">${r.name}</div><div class="ci">${g.icon}</div><div class="cn">${g.name}</div><div><span class="ck" style="--kc:#2f8a2a">${SLOTS[g.slot]}</span></div><div class="cl">${cur?'ersetzt '+GENES[cur].icon+' '+GENES[cur].name:'Freier Slot'}${known?'':' · ★ Neu'}</div><div class="cd">${g.desc(r.m)}</div></button>`; }).join('');
+  $('geneCards').innerHTML=geneOffer.map((o,i)=>{ const g=GENES[o.key], r=RAR[o.r]; const cur=slotOf[g.slot]; const known=meta.lex.genes[o.key]; const own=GN[o.key]; const lv=geneLv(o.key);
+    return `<button class="card r-${r.id}" data-i="${i}"><div class="rb">${r.name}</div><div class="ci">${g.icon}</div><div class="cn">${g.name}</div><div><span class="ck" style="--kc:#2f8a2a">${SLOTS[g.slot]}</span></div><div class="cl">${own?(lv>=GENE_MAXLV?'Maximale Stufe':`⬆ Upgrade: Stufe ${lv} → ${lv+1}`):cur?'ersetzt '+GENES[cur].icon+' '+GENES[cur].name+(geneLv(cur)>1?' (Stufe '+geneLv(cur)+')':''):'Freier Slot'}${known?'':' · ★ Neu'}</div><div class="cd">${g.desc(own?geneM(o.key,lv+1,Math.max(own.base,r.m)):r.m)}</div></button>`; }).join('');
   $('geneTitle').textContent=keys.length>1?'MUTATIONS-KOKON!':'MUTATION!';
   $('gene').classList.add('show'); sfx('chaos');
 }
 function pickGene(i){ const o=geneOffer[i]; if(!o||state!=='genesel') return; installGene(o.key,RAR[o.r].m); $('gene').classList.remove('show'); state='play'; }
 function skipGene(){ if(state!=='genesel') return; runCoins+=10; sfx('coin'); $('gene').classList.remove('show'); state='play'; }
-function installGene(k,m){ const g=GENES[k]; const old=slotOf[g.slot]; if(old){ removeGeneStats(old); delete GN[old]; }
-  slotOf[g.slot]=k; GN[k]={m}; addGeneStats(k,m); meta.lex.genes[k]=1; saveMeta();
+function geneM(k,lv,base){ return base*(1+0.4*(lv-1)); }
+function installGene(k,m){ const g=GENES[k];
+  if(GN[k]){ const cur=GN[k]; if((cur.lv||1)>=GENE_MAXLV){ runCoins+=15; sfx('coin'); return; } removeGeneStats(k); cur.lv=(cur.lv||1)+1; cur.base=Math.max(cur.base||cur.m,m); cur.m=geneM(k,cur.lv,cur.base); addGeneStats(k,cur.m);
+    rebuildPM(); glow(P.x,1,P.z,'#ffd23f',1.2,0.5,6); burst(P.x,1,P.z,'#ffd23f',16,7,0.3,0.6); sfx('level'); banner('GEN-UPGRADE!',g.icon+' '+g.name+' · Stufe '+cur.lv); refreshSlots(); return; }
+  const old=slotOf[g.slot]; if(old){ removeGeneStats(old); delete GN[old]; }
+  slotOf[g.slot]=k; GN[k]={m,base:m,lv:1}; addGeneStats(k,m); meta.lex.genes[k]=1; saveMeta();
   rebuildPM(); glow(P.x,1,P.z,'#9dff6a',1,0.5,6); ringFx(P.x,P.z,5,'#9dff6a',0.5); burst(P.x,1,P.z,'#9dff6a',20,8,0.3,0.6); sfx('win');
   banner('MUTATION!',g.icon+' '+g.name+' ('+SLOTS[g.slot]+')'); refreshSlots(); runGenes++;
 }
@@ -2321,7 +2327,7 @@ function refreshSlots(){
   let h=''; for(const k in W) h+=`<div class="sl">${WEAPONS[k].icon}<b>${W[k].lvl}</b></div>`;
   for(const c of comps) h+=`<div class="sl comp">${COMPS[c.key].icon}<b>${c.lvl}</b></div>`;
   let a=''; for(const k in AU) a+=`<div class="sl aura" style="--ac:${AURAS[k].col}">${AURAS[k].icon}</div>`;
-  let g=''; for(const k in GN) g+=`<div class="sl gene" title="${GENES[k].name}">${GENES[k].icon}</div>`;
+  let g=''; for(const k in GN) g+=`<div class="sl gene" title="${GENES[k].name}">${GENES[k].icon}${(GN[k].lv||1)>1?`<b>${GN[k].lv}</b>`:''}</div>`;
   let el=''; if(EV.stage>=2) el+=`<span class="evob" style="--e1:${ELEM[EV.el1].col};--e2:${ELEM[EV.el2||EV.el1].col}">${EV.name}</span>`; else if(EV.small) el+=`<span class="evob" style="--e1:#c9a46b;--e2:#8a6a45">🥚 Klein</span>`;
   topEls().slice(0,3).forEach(k=>{ el+=`<span class="ech" style="background:${ELEM[k].col}">${ELEM[k].icon}${Math.round(ess[k])}</span>`; });
   if(EV.stage<3&&EV.small!==2){ const nx=!EV.c10?10:25; el+=`<span class="ech" style="background:#6b4a2a">🧬 Lv ${nx}</span>`; }
