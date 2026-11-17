@@ -504,12 +504,12 @@ const Art = (() => {
     if (!v) { backdrop(c, W, H, col); fn(c, W, H, col); }
     else {
       const h = Math.abs(hashStr(sid || key + v)), names = Object.keys(M).filter(n => n !== key), sub = M[names[(h + v * 7) % names.length]], sc = SUBC[(v * 3 + (h >> 5)) % SUBC.length];
-      const mc = tint(col, SUBC[(v * 5 + 2) % SUBC.length], .42), g = BGC[(v + (h >> 7)) % BGC.length];
+      const mc = tint(col, SUBC[(v * 5 + 2) % SUBC.length], W < 100 ? .3 : .42), g = BGC[(v + (h >> 7)) % BGC.length];
       const bg = c.createRadialGradient(W / 2, H / 2, 4, W / 2, H / 2, Math.max(W, H) * .7); bg.addColorStop(0, g[0]); bg.addColorStop(.6, g[1]); bg.addColorStop(1, '#070405'); c.fillStyle = bg; c.fillRect(0, 0, W, H);
       for (let i = 0; i < 8; i++) blob0(c, R() * W, R() * H, H * (.04 + R() * .1), H * (.03 + R() * .07), 'rgba(10,6,7,.5)');
-      BG[v % (BG.length - 1) + 1](c, W, H, mc);
-      const L = LAY[(v * 5 + 1) % LAY.length], m = L[5], corner = (h >> 3) % 4, cx = corner % 2 ? .32 : -.32, cy = corner > 1 ? .24 : -.24, fl = R() < .5 ? -1 : 1;
-      if (m === 0) { place(c, W, H, fn, mc, W * L[1], H * L[2], L[0], L[3], L[4]); place(c, W, H, sub, sc, W * cx, H * cy, .42, (R() - .5) * .6, fl); }
+      if (W >= 100 || v % 3) BG[v % (BG.length - 1) + 1](c, W, H, mc);
+      const small = W < 100, L0 = LAY[(v * 5 + 1) % LAY.length], L = small ? [.86, (v % 3 - 1) * .06, .05, (v % 5 - 2) * .12, v % 2 ? -1 : 1, 0] : W > H * 2 ? [Math.max(.72, L0[0]), L0[1], L0[2], L0[3], L0[4], L0[5]] : L0, m = L[5], corner = (h >> 3) % 4, cx = corner % 2 ? .32 : -.32, cy = corner > 1 ? .24 : -.24, fl = R() < .5 ? -1 : 1;
+      if (m === 0) { place(c, W, H, fn, mc, W * L[1], H * L[2], L[0], L[3], L[4]); place(c, W, H, sub, sc, W * cx, H * cy, small ? .36 : .42, (R() - .5) * .6, fl); }
       else if (m === 1) { place(c, W, H, sub, sc, -W * L[1] * 1.15, H * .06, .56, -L[3], fl); place(c, W, H, fn, mc, W * L[1], H * L[2], L[0], L[3], L[4]); }
       else if (m === 2) { place(c, W, H, fn, mc, -W * Math.abs(L[1]), H * L[2], L[0], -.14, -1); place(c, W, H, fn, sc, W * Math.abs(L[1]), H * L[2], L[0], .14, 1); }
       else if (m === 3) { place(c, W, H, fn, mc, W * L[1], H * L[2], L[0], L[3], L[4]); place(c, W, H, sub, sc, W * cx, H * cy * 1.05, .34, (R() - .5) * .6, fl); }
@@ -1439,7 +1439,11 @@ function describe(ci) {
   if (ci.muts.length) L.push(`<i>‹${ci.muts.join(' · ')}›</i>`);
   return L.join('. ').replace(/\.\./g, '.');
 }
-let _artV; function artVar(id) { if (!_artV) { _artV = {}; const n = {}; Object.keys(CARDS).forEach(k => { const a = CARDS[k].art; n[a] = (n[a] || 0); _artV[k] = n[a]++; }); } return _artV[id] || 0; }
+/* Bildvarianten: jede Karte, jedes Ereignis, jede Kuriosität und Krankheit bekommt ein eigenes, festes Bild */
+let _artV, _artN; function artInit() { if (_artV) return; _artV = {}; _artN = {}; const reg = (sid, a) => { if (_artV[sid] != null) return; _artN[a] = _artN[a] || 0; _artV[sid] = _artN[a]++; };
+  Object.keys(CARDS).forEach(k => reg(k, CARDS[k].art)); Object.keys(RELICS).forEach(k => reg('r:' + k, RELICS[k].art)); Object.keys(DIS).forEach(k => reg('d:' + k, DIS[k].art)); }
+function artVar(id) { artInit(); return _artV[id] || 0; }
+function artImg(art, col, W, H, sid) { artInit(); if (_artV[sid] == null) { let h = 7; for (const ch of sid) h = (h * 31 + ch.charCodeAt(0)) | 0; _artV[sid] = (_artN[art] || 0) + 1 + Math.abs(h) % 29; } return Art.draw(art, col, W, H, _artV[sid] || 1, sid); }
 function cardEl(ci, back) {
   const e = document.createElement('div');
   if (back) { e.className = 'card back'; e.innerHTML = `<img alt="Verdeckte Karte" src="${backUrl()}">`; return e; }
@@ -1482,7 +1486,7 @@ function closeModal() { $('#modal').classList.remove('on'); $('#modal').innerHTM
 function mkBtn(label, desc, fn, cls) { const b = document.createElement('button'); b.className = 'btn ' + (cls || ''); b.innerHTML = `<span>${label}</span>` + (desc ? `<small>${desc}</small>` : ''); b.onclick = () => { Sfx.play('click'); fn(); }; return b; }
 function panel(o) {
   $('#toast').classList.remove('on'); show('s-panel'); const p = $('#s-panel .pin');
-  p.innerHTML = (o.art ? `<img class="pimg" alt="" src="${Art.draw(o.art, o.col || COL.V, 480, 170)}">` : '') + (o.kicker ? `<div class="kick">${o.kicker}</div>` : '') + `<h2>${o.title}</h2>` + (o.text ? `<p>${o.text}</p>` : '') + '<div class="body"></div><div class="choices"></div>';
+  p.innerHTML = (o.art ? `<img class="pimg" alt="" src="${artImg(o.art, o.col || COL.V, 480, 170, o.sid || 'p:' + o.title)}">` : '') + (o.kicker ? `<div class="kick">${o.kicker}</div>` : '') + `<h2>${o.title}</h2>` + (o.text ? `<p>${o.text}</p>` : '') + '<div class="body"></div><div class="choices"></div>';
   (o.choices || []).forEach(c => { const b = mkBtn(c.label, c.desc, c.fn, 'wide'); if (c.off) b.disabled = true; p.querySelector('.choices').appendChild(b); });
   p.scrollTop = 0; return p.querySelector('.body');
 }
@@ -1494,9 +1498,9 @@ function pickCard(title, filter, optional) {
     if (optional || !list.length) p.querySelector('.choices').appendChild(mkBtn('Abbrechen', '', () => { closeModal(); res(null); }, 'sm'));
   });
 }
-function disHtml() { return run.dis.map(d => `<div class="disrow"><img alt="" src="${Art.draw(DIS[d].art, COL.M, 64, 64)}"><div><b>${DIS[d].n}</b><small>${DIS[d].d}</small></div></div>`).join(''); }
+function disHtml() { return run.dis.map(d => `<div class="disrow"><img alt="" src="${artImg(DIS[d].art, COL.M, 64, 64, 'd:' + d)}"><div><b>${DIS[d].n}</b><small>${DIS[d].d}</small></div></div>`).join(''); }
 function showDeck() {
-  if (!run) return; const p = modal(`<h2>Dein Deck <em>${run.deck.length}</em></h2>${run.dis.length ? `<div class="kick">Krankheiten</div>${disHtml()}` : ''}${run.relics.length ? `<div class="kick">Kuriositäten</div>` + run.relics.map(r => `<div class="disrow g"><img alt="" src="${Art.draw(RELICS[r].art, COL.G, 64, 64)}"><div><b>${RELICS[r].n}</b><small>${RELICS[r].d}</small></div></div>`).join('') : ''}<div class="kick">Karten</div><div class="cards"></div><div class="choices"></div>`);
+  if (!run) return; const p = modal(`<h2>Dein Deck <em>${run.deck.length}</em></h2>${run.dis.length ? `<div class="kick">Krankheiten</div>${disHtml()}` : ''}${run.relics.length ? `<div class="kick">Kuriositäten</div>` + run.relics.map(r => `<div class="disrow g"><img alt="" src="${artImg(RELICS[r].art, COL.G, 64, 64, 'r:' + r)}"><div><b>${RELICS[r].n}</b><small>${RELICS[r].d}</small></div></div>`).join('') : ''}<div class="kick">Karten</div><div class="cards"></div><div class="choices"></div>`);
   run.deck.slice().sort((a, b) => a.id.localeCompare(b.id)).forEach(ci => p.querySelector('.cards').appendChild(cardEl(ci))); p.querySelector('.choices').appendChild(mkBtn('Schließen', '', closeModal, 'sm'));
 }
 function kodex() {
@@ -1570,7 +1574,7 @@ function genMap() {
 }
 function avail(n) { if (!run.pos) return n.r === 0; return n.r === run.pos.r + 1 && run.map[run.pos.r][run.pos.c].next.includes(n.c); }
 function topBar(id) {
-  $(id).innerHTML = `<span class="chip hp">♥ ${run.hp}/${run.maxHp}</span><span class="chip spl">◆ ${run.splitter}</span><button class="icons" data-a="deck" aria-label="Deck, Kuriositäten und Krankheiten ansehen">${run.dis.map(d => `<img class="d" alt="${DIS[d].n}" src="${Art.draw(DIS[d].art, COL.M, 64, 64)}">`).join('')}${run.relics.map(r => `<img alt="${RELICS[r].n}" src="${Art.draw(RELICS[r].art, COL.G, 64, 64)}">`).join('')}</button><span class="sp"></span><button class="btn sm" data-a="deck2"><span>Deck ${run.deck.length}</span></button><button class="btn sm sq" data-a="snd" aria-label="Ton"><span>${Sfx.isOn() ? '♪' : '×'}</span></button>`;
+  $(id).innerHTML = `<span class="chip hp">♥ ${run.hp}/${run.maxHp}</span><span class="chip spl">◆ ${run.splitter}</span><button class="icons" data-a="deck" aria-label="Deck, Kuriositäten und Krankheiten ansehen">${run.dis.map(d => `<img class="d" alt="${DIS[d].n}" src="${artImg(DIS[d].art, COL.M, 64, 64, 'd:' + d)}">`).join('')}${run.relics.map(r => `<img alt="${RELICS[r].n}" src="${artImg(RELICS[r].art, COL.G, 64, 64, 'r:' + r)}">`).join('')}</button><span class="sp"></span><button class="btn sm" data-a="deck2"><span>Deck ${run.deck.length}</span></button><button class="btn sm sq" data-a="snd" aria-label="Ton"><span>${Sfx.isOn() ? '♪' : '×'}</span></button>`;
   $(id).querySelector('[data-a=deck]').onclick = showDeck; $(id).querySelector('[data-a=deck2]').onclick = showDeck; $(id).querySelector('[data-a=snd]').onclick = e => { const on = Sfx.toggle(); Mus.toggle(on); e.currentTarget.querySelector('span').textContent = on ? '♪' : '×'; };
 }
 function showMap() {
@@ -1588,7 +1592,7 @@ function enterNode(n) {
   if (n.type === 'fight') { const o = Object.keys(ENEMIES).filter(k => !ENEMIES[k].elite && !ENEMIES[k].boss && (ENEMIES[k].min || 0) <= n.r && k !== run.lastFoe); const k = pick(o); run.lastFoe = k; startCombat(k, 'fight'); }
   else if (n.type === 'elite') startCombat(pick(['kurator', 'mutter', 'arzt', 'loch']), 'elite'); else if (n.type === 'boss') startCombat(run.boss, 'boss');
   else if (n.type === 'rest') rest(); else if (n.type === 'plague') plague();
-  else if (n.type === 'relic') { const r = gainRelic(); panel({ kicker: 'Fund', title: r ? RELICS[r].n : 'Leere Vitrine', art: r ? RELICS[r].art : 'crystal', col: COL.G, text: r ? RELICS[r].d : 'Die Vitrine ist leer. Du findest 15 Splitter.', choices: [{ label: 'Weiter', fn: showMap }] }); if (!r) run.splitter += 15; }
+  else if (n.type === 'relic') { const r = gainRelic(); panel({ kicker: 'Fund', title: r ? RELICS[r].n : 'Leere Vitrine', art: r ? RELICS[r].art : 'crystal', sid: r ? 'r:' + r : 'p:vitrine', col: COL.G, text: r ? RELICS[r].d : 'Die Vitrine ist leer. Du findest 15 Splitter.', choices: [{ label: 'Weiter', fn: showMap }] }); if (!r) run.splitter += 15; }
   else event();
 }
 function gainRelic() { const o = Object.keys(RELICS).filter(r => !run.relics.includes(r)); if (!o.length) return null; const r = pick(o); run.relics.push(r); if (r === 'schnur') { run.maxHp += 12; run.hp += 12; } return r; }
