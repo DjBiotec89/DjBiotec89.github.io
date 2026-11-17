@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>KURIOSUM</title>
 <meta name="description" content="Kuriosum – bizarrer Roguelite-Deckbuilder. Zwei Realitäten. Ein Wille. Oder keiner.">
-<link href="../vendor/kuriosum-fonts.css" rel="stylesheet">
+<link rel="stylesheet" href="../vendor/kuriosum-fonts.css">
+<link rel="stylesheet" href="../vendor/kuriosum-fonts.css">
 <style>:root{--V:#b8323c;--G:#9fae3e;--C:#7d9cc4;--M:#d9788a;--bone:#efe6cf;--yel:#ffe14d;--red:#d1262f;--bg:#070405;--dim:#9c8f84;--fs:11px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--bone);font-family:"VT323","Courier New",monospace;font-size:19px;line-height:1.1;overflow:hidden;overscroll-behavior:none;user-select:none;-webkit-user-select:none;touch-action:manipulation}
@@ -475,10 +476,46 @@ const Art = (() => {
     c.globalAlpha = .22; c.fillStyle = col; c.beginPath(); c.ellipse(W / 2, H / 2, W * .42, H * .42, 0, 0, 7); c.fill(); c.globalAlpha = 1;
     for (let i = 0; i < 10; i++) blob0(c, R() * W, R() * H, H * (.04 + R() * .1), H * (.03 + R() * .07), R() < .5 ? '#140b0d' : '#2c1a1c');
   }
-  function draw(key, col, W = 240, H = 170) {
-    const k = key + col + W + 'x' + H; if (cache[k]) return cache[k];
-    const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d'); R = rng(hashStr(key)); LW = Math.max(2.6, H / 32); jit = H / 80;
-    backdrop(c, W, H, col); (M[key] || M.eye)(c, W, H, col);
+  /* Hintergrund-Varianten: jede Karte mit gleichem Motiv bekommt eine eigene Bühne */
+  const BG = [
+    null,
+    (c, W, H, col) => { c.save(); c.translate(W / 2, H / 2); const n = 14; for (let i = 0; i < n; i += 2) { c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, W, i / n * 6.283, (i + 1) / n * 6.283); c.closePath(); c.fillStyle = 'rgba(10,6,7,.45)'; c.fill(); } c.restore(); },
+    (c, W, H, col) => { for (let r = W * .75; r > 8; r -= H * .085) { c.beginPath(); c.ellipse(W / 2, H / 2, r, r * .72, 0, 0, 7); c.lineWidth = LW * .7; c.strokeStyle = (r / (H * .085) | 0) % 2 ? 'rgba(10,6,7,.6)' : darker(col, .45); c.stroke(); } },
+    (c, W, H, col) => { const hy = H * .55; for (let j = 0; j < 7; j++) { const y0 = hy + (H - hy) * Math.pow(j / 7, 1.6), y1 = hy + (H - hy) * Math.pow((j + 1) / 7, 1.6); for (let i = -8; i < 8; i++) { if ((i + j) % 2) continue; const k0 = (y0 - hy) / (H - hy) * 1.4 + .15, k1 = (y1 - hy) / (H - hy) * 1.4 + .15, w = W * .09; c.beginPath(); c.moveTo(W / 2 + i * w * k0, y0); c.lineTo(W / 2 + (i + 1) * w * k0, y0); c.lineTo(W / 2 + (i + 1) * w * k1, y1); c.lineTo(W / 2 + i * w * k1, y1); c.fillStyle = 'rgba(239,230,207,.13)'; c.fill(); } } },
+    (c, W, H, col) => { for (let i = 0; i < 11; i++) { const x = W * (i + .3 + R() * .4) / 11, l = H * (.12 + R() * .35), w = H * (.025 + R() * .03); c.beginPath(); c.moveTo(x - w, 0); c.lineTo(x - w, l); c.arc(x, l, w, Math.PI, 0, true); c.lineTo(x + w, 0); c.fillStyle = i % 3 ? darker(col, .5) : PAL.blood; c.fill(); } },
+    (c, W, H, col) => { for (let i = 0; i < 9; i++) { const x = R() * W, y = R() * H; if (Math.abs(x - W / 2) < W * .2 && Math.abs(y - H / 2) < H * .3) continue; eye(c, x, y, H * (.035 + R() * .03), R() < .3 ? PAL.red : col, { slit: R() < .5 }); } },
+    (c, W, H, col) => { const n = 9; for (let i = 0; i < n; i++) { c.fillStyle = i % 2 ? 'rgba(10,6,7,.5)' : 'rgba(165,42,50,.18)'; const x = i / n * W; c.beginPath(); c.moveTo(x, 0); for (let y = 0; y <= H; y += H / 8) c.lineTo(x + Math.sin(y * .05 + i) * W * .012, y); for (let y = H; y >= 0; y -= H / 8) c.lineTo(x + W / n + Math.sin(y * .05 + i + 1) * W * .012, y); c.fill(); } },
+    (c, W, H, col) => { for (let i = 0; i < 40; i++) { c.fillStyle = R() < .2 ? col : 'rgba(239,230,207,.55)'; const s = 1 + R() * 2.5; c.fillRect(R() * W, R() * H, s, s); } const mx = W * (R() < .5 ? .16 : .84), my = H * .22; cel(c, mx, my, H * .1, H * .1, PAL.bone, '#bfae90', {}); blob0(c, mx + H * .05, my - H * .02, H * .08, H * .08, '#1d1114'); },
+    (c, W, H, col) => { for (let i = 0; i < 8; i++) { const sx = R() < .5 ? 0 : W, sy = R() * H; line0(c, wig(sx, sy, sx ? Math.PI + (R() - .5) : (R() - .5), W * .55, 9, .7), i % 2 ? PAL.blood : darker(col, .5), LW * (.4 + R() * .5)); } },
+    (c, W, H, col) => { const cols = ['rgba(201,138,125,.22)', 'rgba(111,77,128,.25)', 'rgba(95,112,80,.25)', 'rgba(239,230,207,.12)']; const gx = 4, gy = 3; for (let i = 0; i < gx; i++) for (let j = 0; j < gy; j++) { c.fillStyle = cols[(i + j * 3 + (R() * 4 | 0)) % 4]; c.fillRect(i * W / gx, j * H / gy, W / gx, H / gy); } for (let i = 1; i < gx; i++) stitch(c, [[i * W / gx, 0], [i * W / gx + (R() - .5) * 6, H]], 7); for (let j = 1; j < gy; j++) stitch(c, [[0, j * H / gy], [W, j * H / gy + (R() - .5) * 6]], 9); },
+    (c, W, H, col) => { c.save(); c.translate(W / 2, H / 2); const p = []; for (let a = 0; a < 26; a += .2) p.push([Math.cos(a) * a * H * .03, Math.sin(a) * a * H * .022]); c.translate(-W / 2, -H / 2); shape(c, p.map(q => [q[0] + W / 2, q[1] + H / 2]), false); c.restore(); c.lineWidth = LW * 1.2; c.strokeStyle = 'rgba(10,6,7,.55)'; c.stroke(); },
+    (c, W, H, col) => { for (let i = 0; i < 6; i++) { const x = W * (i + .5) / 6; line(c, [[x, H], [x + (R() - .5) * 8, H * (.55 + R() * .2)]], darker(col, .4), LW * .5); tooth(c, x, H * (.62 + R() * .1), H * .05, H * .07, false); } c.fillStyle = 'rgba(10,6,7,.35)'; c.fillRect(0, 0, W, H * .12); },
+  ];
+  /* Komposition je Karte: Modus 0 Motiv+Ecke, 1 Duo, 2 Zwilling, 3 Nahaufnahme, 4 Rahmen+Trabanten, 5 Turm */
+  const LAY = [[.82, -.1, .03, -.1, 1, 0], [.68, -.2, .05, -.12, 1, 1], [.58, .2, .04, 0, 1, 2], [1.4, .1, .14, -.18, 1, 3], [.5, 0, 0, 0, -1, 4], [.66, .2, .05, .16, -1, 1], [.78, .08, -.04, .2, -1, 0], [1.3, -.12, -.1, .14, -1, 3], [.55, 0, .02, Math.PI, 1, 4], [.72, .16, .06, .22, 1, 5], [.6, 0, .18, 0, 1, 5], [.9, 0, .02, -.3, 1, 0]];
+  const SUBC = [PAL.bone, PAL.red, PAL.bile, PAL.bruise, PAL.pink, PAL.yel, PAL.ether, PAL.rust];
+  const BGC = [['#3a2326', '#1d1114'], ['#2e2648', '#110d1e'], ['#2f3a24', '#10150b'], ['#4a2a18', '#190d07'], ['#1f3640', '#0a1418'], ['#46203a', '#170a13'], ['#3e3a1e', '#15130a'], ['#203a30', '#0a1612']];
+  function place(c, W, H, fn, col, tx, ty, s, rot, flip) { const lw = LW; c.save(); c.translate(W / 2 + tx, H / 2 + ty); c.rotate(rot); c.scale(s * flip, s); c.translate(-W / 2, -H / 2); LW = lw / s; fn(c, W, H, col); LW = lw; c.restore(); }
+  function tint(a, b, k) { const p = x => [1, 3, 5].map(i => parseInt(x.slice(i, i + 2), 16)); const A = p(a), B = p(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * k).toString(16).padStart(2, '0')).join(''); }
+  function draw(key, col, W = 240, H = 170, v = 0, sid = '') {
+    const k = key + col + W + 'x' + H + ':' + v + sid; if (cache[k]) return cache[k];
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d'); R = rng(hashStr(key + (v ? v + sid : ''))); LW = Math.max(2.6, H / 32); jit = H / 80;
+    const fn = M[key] || M.eye;
+    if (!v) { backdrop(c, W, H, col); fn(c, W, H, col); }
+    else {
+      const h = Math.abs(hashStr(sid || key + v)), names = Object.keys(M).filter(n => n !== key), sub = M[names[(h + v * 7) % names.length]], sc = SUBC[(v * 3 + (h >> 5)) % SUBC.length];
+      const mc = tint(col, SUBC[(v * 5 + 2) % SUBC.length], .42), g = BGC[(v + (h >> 7)) % BGC.length];
+      const bg = c.createRadialGradient(W / 2, H / 2, 4, W / 2, H / 2, Math.max(W, H) * .7); bg.addColorStop(0, g[0]); bg.addColorStop(.6, g[1]); bg.addColorStop(1, '#070405'); c.fillStyle = bg; c.fillRect(0, 0, W, H);
+      for (let i = 0; i < 8; i++) blob0(c, R() * W, R() * H, H * (.04 + R() * .1), H * (.03 + R() * .07), 'rgba(10,6,7,.5)');
+      BG[v % (BG.length - 1) + 1](c, W, H, mc);
+      const L = LAY[(v * 5 + 1) % LAY.length], m = L[5], corner = (h >> 3) % 4, cx = corner % 2 ? .32 : -.32, cy = corner > 1 ? .24 : -.24, fl = R() < .5 ? -1 : 1;
+      if (m === 0) { place(c, W, H, fn, mc, W * L[1], H * L[2], L[0], L[3], L[4]); place(c, W, H, sub, sc, W * cx, H * cy, .42, (R() - .5) * .6, fl); }
+      else if (m === 1) { place(c, W, H, sub, sc, -W * L[1] * 1.15, H * .06, .56, -L[3], fl); place(c, W, H, fn, mc, W * L[1], H * L[2], L[0], L[3], L[4]); }
+      else if (m === 2) { place(c, W, H, fn, mc, -W * Math.abs(L[1]), H * L[2], L[0], -.14, -1); place(c, W, H, fn, sc, W * Math.abs(L[1]), H * L[2], L[0], .14, 1); }
+      else if (m === 3) { place(c, W, H, fn, mc, W * L[1], H * L[2], L[0], L[3], L[4]); place(c, W, H, sub, sc, W * cx, H * cy * 1.05, .34, (R() - .5) * .6, fl); }
+      else if (m === 4) { c.beginPath(); c.ellipse(W / 2, H / 2, H * .36, H * .36, 0, 0, 7); c.fillStyle = g[0]; c.fill(); c.lineWidth = LW * 1.6; c.strokeStyle = INK; c.stroke(); c.lineWidth = LW * .7; c.strokeStyle = sc; c.stroke(); place(c, W, H, fn, mc, 0, 0, L[0], L[3], L[4]); [-1, 1].forEach(s2 => place(c, W, H, sub, sc, W * .34 * s2, H * (.1 - (R() * .3)), .3, s2 * .3, s2)); }
+      else { place(c, W, H, sub, sc, 0, -H * .26, .4, 0, fl); place(c, W, H, fn, mc, W * L[1] * .4, H * L[2], L[0], L[3], L[4]); }
+    }
     const q = W >= 200 ? 3 : 2; return (cache[k] = crunch(cv, Math.round(W / q), Math.round(H / q)).toDataURL('image/png'));
   }
   function cardBack() {
@@ -1402,12 +1439,13 @@ function describe(ci) {
   if (ci.muts.length) L.push(`<i>‹${ci.muts.join(' · ')}›</i>`);
   return L.join('. ').replace(/\.\./g, '.');
 }
+let _artV; function artVar(id) { if (!_artV) { _artV = {}; const n = {}; Object.keys(CARDS).forEach(k => { const a = CARDS[k].art; n[a] = (n[a] || 0); _artV[k] = n[a]++; }); } return _artV[id] || 0; }
 function cardEl(ci, back) {
   const e = document.createElement('div');
   if (back) { e.className = 'card back'; e.innerHTML = `<img alt="Verdeckte Karte" src="${backUrl()}">`; return e; }
   const v = view(ci);
   e.className = `card wl-${v.wl}` + (ci.muts.length ? ' mut' : '') + (ci.inf ? ' inf' : '') + (cb && cb.st && cb.st.wahn ? ' wahn' : '') + (ALLSIG.includes(ci.id) ? ' sig' : '');
-  e.innerHTML = `<div class="c-cost"><b>${v.x ? 'X' : v.cost}</b></div>${ci.inf ? `<div class="inf-b">Inf ${ci.inf}</div>` : ''}<div class="c-name">${v.def.n}</div><div class="c-art"><img alt="" src="${Art.draw(v.def.art, v.wl === 'X' ? '#8a8078' : COL[v.wl])}"></div><div class="c-type"><span>${TYPE[v.def.t]}</span></div><div class="c-text${describe(ci).replace(/<[^>]+>/g, '').length > 62 ? ' long' : ''}">${cb && cb.st && cb.st.wahn ? describe(ci).replace(/<s>\d+<\/s>/g, '<s>?</s>') : describe(ci)}</div>`;
+  e.innerHTML = `<div class="c-cost"><b>${v.x ? 'X' : v.cost}</b></div>${ci.inf ? `<div class="inf-b">Inf ${ci.inf}</div>` : ''}<div class="c-name">${v.def.n}</div><div class="c-art"><img alt="" src="${Art.draw(v.def.art, v.wl === 'X' ? '#8a8078' : COL[v.wl], 240, 170, artVar(ci.id), ci.id)}"></div><div class="c-type"><span>${TYPE[v.def.t]}</span></div><div class="c-text${describe(ci).replace(/<[^>]+>/g, '').length > 62 ? ' long' : ''}">${cb && cb.st && cb.st.wahn ? describe(ci).replace(/<s>\d+<\/s>/g, '<s>?</s>') : describe(ci)}</div>`;
   return e;
 }
 let _back; function backUrl() { return _back || (_back = Art.cardBack().toDataURL('image/png')); }
