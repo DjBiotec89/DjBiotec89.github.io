@@ -218,16 +218,16 @@ body.fractured #app{animation:fracW 2.4s steps(1) infinite}@keyframes fracW{0%,9
 .float{animation-fill-mode:both}
 
 /* --- Absichts-Icons der Monster --- */
-#intent{gap:10px;min-height:46px;margin-top:2px}
+#intent{gap:12px;min-height:24px;margin-top:1px}
 .ic{position:relative;display:inline-flex;align-items:flex-end;background:none;border:0;padding:0;cursor:pointer;animation:bob 1s steps(2) infinite}
 .ic:nth-child(2){animation-delay:.25s}.ic:nth-child(3){animation-delay:.5s}
-.ic img{width:42px;height:42px;image-rendering:pixelated;display:block;filter:drop-shadow(3px 3px 0 rgba(0,0,0,.8))}
-.ic b{position:absolute;right:-10px;bottom:-4px;font:700 22px/1 "Pixelify Sans","VT323",monospace;color:var(--bone);text-shadow:2px 0 #000,-2px 0 #000,0 2px #000,0 -2px #000,2px 2px #000;white-space:nowrap}
+.ic img{width:24px;height:24px;image-rendering:pixelated;display:block;filter:drop-shadow(3px 3px 0 rgba(0,0,0,.8))}
+.ic{gap:2px;align-items:center}.ic b{position:static;font:700 17px/1 "Pixelify Sans","VT323",monospace;color:var(--bone);text-shadow:2px 0 #000,-2px 0 #000,0 2px #000,0 -2px #000,2px 2px #000;white-space:nowrap}
 .ic.atk b{color:#ff6b6b}.ic.blk b{color:var(--C)}.ic.cold b{color:var(--bone)}
 .ic.atk img{animation:icAtk .9s steps(2) infinite}.ic.warn img{animation:icWarn .5s steps(2) infinite}
 @keyframes icAtk{50%{transform:rotate(-8deg) scale(1.08)}}@keyframes icWarn{50%{filter:drop-shadow(3px 3px 0 rgba(0,0,0,.8)) brightness(1.5)}}
 @media (prefers-reduced-motion:reduce){.ic,.ic img{animation:none}}
-#intent:not(:empty){background:rgba(0,0,0,.62);border:2px solid #3a2a2a;padding:4px 18px 6px 10px}
+#intent:not(:empty){background:rgba(0,0,0,.45);padding:1px 8px}
 </style>
 </head>
 <body>
@@ -1611,7 +1611,7 @@ function startCombat(key, kind) {
   cb = { kind, key, turn: 0, energy: 3, block: 0, inst: CHARS[run.char].base, chain: 0, chainWl: null, played: 0, last: null, frac: null, busy: true, over: false, hand: [], discard: [], exhaust: [], rot: [], autoQ: [], drain: 0, less: 0, peeks: 0, gift: 0, atkN: 0, over4: 0, befDmg: 0, stolen: [], st: {}, cmd: null, cmdBonus: 0, twice: 0, draw: shuffle(run.deck.slice()),
     enemy: { n: d.n, hp: Math.round(d.hp * sc), max: Math.round(d.hp * sc), block: 0, befall: hasRelic('ei') ? 5 : 0, weak: 0, vuln: 0, thorns: d.thorns || 0, bonus: (d.boss ? 0 : 2 + Math.floor(row / 2)) + asc, moves: d.moves, mi: 0, phase2: false, sick: false, tr: d.tr, immune: 'V', st: {} } };
   cb.enemy.intent = cb.enemy.moves[0]; run.deck.forEach(c => { c.free = false; c.hidden = false; c.seen = false; }); selUid = null;
-  show('s-combat'); GFX.show(key, { y: innerWidth < innerHeight ? 1.7 : 1.3, scale: innerWidth < innerHeight ? .92 : .72 }); GFX.setFracture(false); if (d.boss) banner(d.title); Sfx.init(); Mus.play(d.boss ? 'boss' : 'combat');
+  show('s-combat'); GFX.show(key, { y: innerWidth < innerHeight ? 1.45 : 1.15, scale: innerWidth < innerHeight ? .92 : .72 }); GFX.setFracture(false); if (d.boss) banner(d.title); Sfx.init(); Mus.play(d.boss ? 'boss' : 'combat');
   if (hasDis('bruch')) triggerFracture(true);
   if (!meta.tipSwipe && !K.fast) { meta.tipSwipe = true; save(); setTimeout(() => toast('Wische eine Karte <b>nach oben</b>, um sie zu spielen. Antippen zeigt sie groß.', 4200), 1400); }
   setTimeout(startTurn, K.fast ? 0 : 600);
