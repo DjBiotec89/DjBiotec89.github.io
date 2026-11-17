@@ -1391,19 +1391,19 @@ const WF={
     volley(ox,oz,0.72*stats.size,t,n,o); mirrorFire(o,1); P.recoil=1; sfx('shoot'); glow(ox,0.72,oz,'#ffe14d',0.5,0.1,1); }},
   charge:{cd:l=>Math.max(1.3,5.2-l*0.5),fire(w){ const t=P.target; if(!t) return false; const o={dmg:(35+w.lvl*15)*w.mul,speed:20,pierce:999,bounce:0,r:0.6*stats.projSize,s:3*stats.projSize,life:1.7,kb:12,col:COL.charge,kind:'charge'};
     volley(P.x,P.z,1,t,1,o); mirrorFire(o); sfx('charge'); addShake(0.15); glow(P.x,1,P.z,'#6ef6ff',1,0.25,4); }},
-  saws:{update(w,dt){ const n=Math.min(8,w.lvl+1); const R=(2.6+w.lvl*0.15)*AREA(); P.sawA+=dt*(3+w.lvl*0.25); const dmg=(7+w.lvl*4)*w.mul; w.pos=w.pos||[]; w.pos.length=0;
+  saws:{update(w,dt){ const n=Math.min(16,Math.min(8,w.lvl+1)+(stats.multishot-1)); const R=(2.6+w.lvl*0.15)*AREA(); P.sawA+=dt*(3+w.lvl*0.25); const dmg=(7+w.lvl*4)*w.mul; w.pos=w.pos||[]; w.pos.length=0;
     for(let i=0;i<n;i++){ const a=P.sawA+i/n*TAU; const sx=P.x+Math.cos(a)*R, sz=P.z+Math.sin(a)*R; w.pos.push([sx,sz]);
       forNear(sx,sz,0.8,e=>{ if(e.sawCd>0) return; if(Math.hypot(e.x-sx,e.z-sz)<e.r+0.6){ const ex=e.x-P.x,ez=e.z-P.z,ed=Math.hypot(ex,ez)||1; hitEnemy(e,dmg,ex/ed*6,ez/ed*6); e.sawCd=0.3; burst(sx,0.8,sz,'#ffffff',3,5,0.1,0.2); glow(sx,0.8,sz,'#ffd23f',0.4,0.12,1.4);} }); } }},
   bonk:{cd:l=>Math.max(1.1,3.4-l*0.3),fire(w){ if(!nearestEnemy(P.x,P.z,6)) return false; const R=(3.8+w.lvl*0.45)*AREA(); const dmg=(18+w.lvl*10)*w.mul;
     forNear(P.x,P.z,R,e=>{ const dx=e.x-P.x,dz=e.z-P.z,d=Math.hypot(dx,dz)||1; if(d<R+e.r) hitEnemy(e,dmg,dx/d*14,dz/d*14); });
     ringFx(P.x,P.z,R,'#ff8a2b',0.35); ringFx(P.x,P.z,R*0.6,'#ffd23f',0.3); glow(P.x,0.5,P.z,'#7a4010',1,0.3,R*1.8); burst(P.x,0.3,P.z,'#d9b38a',14,R*2,0.25,0.5); P.hamT=0; P.hamR=R*0.85; addShake(0.3); sfx('bonk');
     if(Math.random()<0.4) popText('BONK!',P.x,2.6,P.z); }},
-  zap:{cd:l=>Math.max(0.45,1.7-l*0.18),fire(w){ let t=nearestEnemy(P.x,P.z,13); if(!t) return false; const dmg=(12+w.lvl*6)*w.mul; const hit=[]; let fx=P.x,fy=1.2,fz=P.z; const n=2+w.lvl;
+  zap:{cd:l=>Math.max(0.45,1.7-l*0.18),fire(w){ let t=nearestEnemy(P.x,P.z,13*Math.sqrt(AREA())); if(!t) return false; const dmg=(12+w.lvl*6)*w.mul; const hit=[]; let fx=P.x,fy=1.2,fz=P.z; const n=2+w.lvl+stats.pierce*2+stats.bounce;
     for(let i=0;i<n && t;i++){ const ty=t.def.fly?2:(t.boss?2.5:0.8); bolt(fx,fy,fz,t.x,ty,t.z,'#c8fbff',1.3); hit.push(t); hitEnemy(t,dmg,0,0); glow(t.x,ty,t.z,'#8ef0ff',0.6,0.2,2.4); burst(t.x,ty,t.z,'#c8fbff',4,5,0.12,0.25); fx=t.x;fy=ty;fz=t.z; t=nearestEnemy(fx,fz,8,hit); }
     sfx('zap'); }},
-  bombs:{cd:l=>Math.max(0.8,2.6-l*0.25),fire(w){ const n=1+Math.floor(w.lvl/2); let any=false;
+  bombs:{cd:l=>Math.max(0.8,2.6-l*0.25),fire(w){ const n=Math.min(16,1+Math.floor(w.lvl/2)+(stats.multishot-1)); let any=false;
     for(let i=0;i<n;i++){ const e=randomEnemyNear(P.x,P.z,14); if(!e) break; any=true; bombs.push({el:curEl,sx:P.x,sz:P.z,tx:e.x,tz:e.z,t:0,dur:0.6+i*0.08,R:(3.2+w.lvl*0.35)*AREA(),dmg:(28+w.lvl*14)*w.mul}); } return any?undefined:false; }},
-  boomer:{cd:l=>Math.max(0.7,2.2-l*0.18),fire(w){ const t=P.target; if(!t) return false; const n=1+Math.floor(w.lvl/3); const base=Math.atan2(t.x-P.x,t.z-P.z);
+  boomer:{cd:l=>Math.max(0.7,2.2-l*0.18),fire(w){ const t=P.target; if(!t) return false; const n=Math.min(16,1+Math.floor(w.lvl/3)+(stats.multishot-1)); const base=Math.atan2(t.x-P.x,t.z-P.z);
     for(let i=0;i<n;i++){ const a=base+(i-(n-1)/2)*0.5; spawnProj({kind:'leaf',x:P.x,y:0.9,z:P.z,vx:Math.sin(a)*20,vz:Math.cos(a)*20,dmg:(14+w.lvl*7)*w.mul,pierce:999,bounce:0,r:0.7*stats.projSize,s:1.2*stats.projSize,life:4,kb:5,col:WHITE,range:(9+w.lvl*0.5)*AREA()}); }
     mirrorFire({dmg:(14+w.lvl*7)*w.mul,speed:22,pierce:2,bounce:0,r:0.3,s:1,life:1.2,kb:3,col:COL.mirror}); sfx('whoosh'); }},
   flame:{update(w,dt){ const t=P.target; if(!t) return; const len=(4.5+w.lvl*0.4)*AREA(); const d=Math.hypot(t.x-P.x,t.z-P.z); if(d>len+t.r+1) return;
@@ -1411,7 +1411,7 @@ const WF={
     w.fx=(w.fx||0)+dt*60*Q(); while(w.fx>=1){ w.fx--; const a=a0+rand(-0.38,0.38), sp=rand(9,14)*len/5; glow(ox,0.75,oz,pick(['#ffd23f','#ff8a1c','#ff4a1a']),0.35,len/sp,1.6,Math.sin(a)*sp,rand(0,1.5),Math.cos(a)*sp); }
     w.tk=(w.tk||0)-dt; if(w.tk<=0){ w.tk=0.12; const dmg=(3+w.lvl*1.5)*w.mul; sfx('flame');
       forNear(P.x,P.z,len,e=>{ const dx=e.x-P.x,dz=e.z-P.z,dd=Math.hypot(dx,dz); if(dd>len+e.r) return; const ang=Math.abs(lerpAngle(0,Math.atan2(dx,dz)-a0,1)); if(ang<0.45+e.r/Math.max(1,dd)){ hitEnemy(e,dmg,dx/(dd||1)*1.5,dz/(dd||1)*1.5,{dot:true}); e.burn=2*stats.burnMul; e.burnDps=Math.max(e.burnDps,(2+w.lvl)*w.mul); } }); } }},
-  meteor:{cd:l=>Math.max(0.9,3.2-l*0.28),fire(w){ const n=1+Math.floor(w.lvl/2); let any=false;
+  meteor:{cd:l=>Math.max(0.9,3.2-l*0.28),fire(w){ const n=Math.min(16,1+Math.floor(w.lvl/2)+(stats.multishot-1)); let any=false;
     for(let i=0;i<n;i++){ const e=randomEnemyNear(P.x,P.z,16); if(!e) break; any=true; const x=e.x+rand(-1,1), z=e.z+rand(-1,1), R=(2.8+w.lvl*0.3)*AREA(), dmg=(40+w.lvl*20)*w.mul;
       const mel=curEl; tele(x,z,R,0.9,'#ff8a1c',()=>{ const pc=curEl; curEl=mel; explode(x,z,R,dmg,'#ff7a1a',12); curEl=pc; zones.push({type:'fire',x,z,R:R*0.7,t:0,dur:2.5*DUR(),dps:(6+w.lvl*3)*w.mul}); if(Math.random()<0.2) popText('KOKOS!',x,2,z,'#ff8a1c'); }); cocos.push({x,z,y:18,t:0,dur:0.9}); }
     return any?undefined:false; }},
@@ -1425,14 +1425,14 @@ const WF={
     w.tk=(w.tk||0)-dt; if(w.tk<=0){ w.tk=0.15; const dmg=(6+w.lvl*4)*w.mul; let any=false;
       for(const [ox,oz,sx,sz,Lb] of w.beams){ const bx=P.x+ox, bz=P.z+oz; forNear(bx+sx*Lb/2,bz+sz*Lb/2,Lb/2+1,e=>{ const ex=e.x-bx, ez=e.z-bz; const proj=ex*sx+ez*sz; if(proj<0||proj>Lb) return; const perp=Math.abs(ex*sz-ez*sx); if(perp<e.r+w.bw){ hitEnemy(e,dmg,0,0,{dot:true}); any=true; glow(e.x,0.9,e.z,'#ffffff',0.4,0.1,1.2); } }); }
       if(any) sfx('laser'); } }},
-  missile:{cd:l=>Math.max(0.5,1.8-l*0.15),fire(w){ if(!P.target) return false; const n=2+Math.floor(w.lvl/2);
+  missile:{cd:l=>Math.max(0.5,1.8-l*0.15),fire(w){ if(!P.target) return false; const n=Math.min(16,2+Math.floor(w.lvl/2)+(stats.multishot-1));
     for(let i=0;i<n;i++){ const a=P.face+Math.PI+rand(-1.4,1.4); spawnProj({kind:'missile',x:P.x,y:1.2,z:P.z,vx:Math.sin(a)*8,vz:Math.cos(a)*8,dmg:(12+w.lvl*6)*w.mul,pierce:0,bounce:0,r:0.3,s:0.9,life:3,kb:3,col:COL.missile,R:1.4*AREA()}); }
     mirrorFire({dmg:(12+w.lvl*6)*w.mul,speed:20,pierce:0,bounce:0,r:0.25,s:0.9,life:1.2,kb:2,col:COL.mirror}); sfx('whoosh'); }},
-  tornado:{cd:l=>Math.max(2,6-l*0.45),fire(w){ const n=1+Math.floor(w.lvl/4); for(let i=0;i<n;i++){ const a=Math.random()*TAU; torns.push({x:P.x+Math.cos(a)*1.5,z:P.z+Math.sin(a)*1.5,vx:Math.cos(a)*4,vz:Math.sin(a)*4,t:0,dur:(4+w.lvl*0.2)*DUR(),R:(1.8+w.lvl*0.15)*AREA(),dmg:(6+w.lvl*3)*w.mul,tk:0,rot:0}); } sfx('whoosh'); }},
+  tornado:{cd:l=>Math.max(2,6-l*0.45),fire(w){ const n=Math.min(16,1+Math.floor(w.lvl/4)+(stats.multishot-1)); for(let i=0;i<n;i++){ const a=Math.random()*TAU; torns.push({x:P.x+Math.cos(a)*1.5,z:P.z+Math.sin(a)*1.5,vx:Math.cos(a)*4,vz:Math.sin(a)*4,t:0,dur:(4+w.lvl*0.2)*DUR(),R:(1.8+w.lvl*0.15)*AREA(),dmg:(6+w.lvl*3)*w.mul,tk:0,rot:0}); } sfx('whoosh'); }},
 };
 function updateWeapons(dt){
   const hs=stats.haste*(P.buffs.rage>0?1.6:1)*(glitchMod==='turbo'?1.4:1);
-  for(const k in W){ const w=W[k], f=WF[k]; curEl=elOf(k); curWK=k; if(f.update) f.update(w,dt); if(f.cd){ w.t-=dt*hs; if(w.t<=0){ const r=f.fire(w); w.t=r===false?0.1:f.cd(w.lvl); } } }
+  for(const k in W){ const w=W[k], f=WF[k]; curEl=elOf(k); curWK=k; if(f.update) f.update(w,dt); if(f.update&&!f.cd) w.hs=hs; if(f.cd){ w.t-=dt*hs; if(w.t<=0){ const r=f.fire(w); w.t=r===false?0.1:f.cd(w.lvl); } } }
   curEl=null;
 }
 // ================= AURAS =================
@@ -1463,12 +1463,12 @@ function chaosEffect(pw){
   else if(r===5){ forNear(P.x,P.z,16,e=>hitEnemy(e,15*pw,0,0)); flashScreen(0.3); popText('SCHMERZ!',P.x,2.6,P.z,'#ff2d4f'); }
   else { forNear(P.x,P.z,10,e=>{ if(!e.boss) e.frz=2; }); ringFx(P.x,P.z,10,'#7fdcff',0.5); popText('EISZEIT!',P.x,2.6,P.z,'#7fdcff'); }
 }
-function updateAuras(dt){ for(const k in AU){ const a=AU[k]; const f=AF[k]; curEl=A_EL[k][0]; f.upd(a,dt,f.R*AREA()); } curEl=null; }
+function updateAuras(dt){ const hs=1+(stats.haste*(P.buffs.rage>0?1.6:1)-1)*0.7; for(const k in AU){ const a=AU[k]; const f=AF[k]; curEl=A_EL[k][0]; const tk0=a.tk; f.upd(a,dt,f.R*AREA()); if(a.tk!==undefined&&tk0!==undefined&&a.tk<tk0&&hs>1) a.tk-=dt*(hs-1); } curEl=null; }
 
 // ================= COMPANIONS =================
 function addCompanion(key,lvl=0){ const c={key,lvl,mul:1,g:buildCompanion(key),x:P.x,z:P.z,y:0,t:Math.random()*6,cd:0,tgt:null,respawn:0,pulse:3,ry:0}; comps.push(c); return c; }
 function updateCompanions(dt){
-  for(const c of comps){ c.t+=dt; c.cd-=dt; curEl=C_EL[c.key][0];
+  const chs=stats.haste*(P.buffs.rage>0?1.6:1); for(const c of comps){ c.t+=dt; c.cd-=dt*chs; curEl=C_EL[c.key][0];
     if(c.key==='funki'){ const a=c.t*1.3; const tx=P.x+Math.cos(a)*1.8, tz=P.z+Math.sin(a)*1.8, ty=2.3+Math.sin(c.t*3)*0.2; c.x+=(tx-c.x)*Math.min(1,dt*6); c.z+=(tz-c.z)*Math.min(1,dt*6); c.y+=(ty-c.y)*Math.min(1,dt*6);
       const t=nearestEnemy(c.x,c.z,20); if(t){ c.ry=Math.atan2(t.x-c.x,t.z-c.z); if(c.cd<=0){ c.cd=Math.max(0.2,0.9-c.lvl*0.08); volley(c.x,c.z,c.y-0.3,t,1,{dmg:(6+c.lvl*3)*c.mul,speed:22,pierce:Math.floor(c.lvl/3),bounce:0,r:0.2,s:0.8,life:1.1,kb:2,col:COL.funki}); } } }
     else if(c.key==='mampfi'){
@@ -1695,9 +1695,9 @@ function update(dt){
 
 // ================= POWER-UPS =================
 function activatePU(k){ const d=POWERUPS[k]; banner(d.icon+' '+d.name.toUpperCase()+'!',d.desc); sfx('win'); flashScreen(0.3); glow(P.x,1,P.z,d.col,1,0.6,9); ringFx(P.x,P.z,8,d.col,0.6);
-  if(k==='nuke'){ addShake(1.2); flashScreen(0.6); sfx('boom'); glow(P.x,4,P.z,'#ffffff',4,0.9,40); glow(P.x,8,P.z,'#9dff6a',3,1.2,25,0,6,0); for(const e of enemies) if(e.alive&&Math.hypot(e.x-P.x,e.z-P.z)<32){ e.hidden=false; hitEnemy(e,99999,0,0,{noCrit:true}); } if(boss&&boss.alive) hitEnemy(boss,boss.maxHp*0.1/effDmg(),0,0,{noCrit:true}); for(let i=0;i<6;i++) ringFx(P.x,P.z,8+i*5,'#9dff6a',0.5+i*0.12); return; }
+  if(k==='nuke'){ addShake(1.2); flashScreen(0.6); sfx('boom'); glow(P.x,4,P.z,'#ffffff',4,0.9,40); glow(P.x,8,P.z,'#9dff6a',3,1.2,25,0,6,0); for(const e of enemies) if(e.alive&&Math.hypot(e.x-P.x,e.z-P.z)<32*AREA()){ e.hidden=false; hitEnemy(e,99999,0,0,{noCrit:true}); } if(boss&&boss.alive) hitEnemy(boss,boss.maxHp*0.1/effDmg(),0,0,{noCrit:true}); for(let i=0;i<6;i++) ringFx(P.x,P.z,8+i*5,'#9dff6a',0.5+i*0.12); return; }
   if(k==='magnet'){ drops.forEach(g=>g.pull=true); return; }
-  PU[k]=(PU[k]||0)+d.dur; PU['_t'+k]=0;
+  PU[k]=(PU[k]||0)+d.dur*DUR(); PU['_t'+k]=0;
   if(k==='clones') makeClones();
 }
 function makeClones(){ clearClones(); for(let i=0;i<4;i++){ const g=PM.g.clone(); g.traverse(o=>{ if(o.material&&o.material!==OL&&o.material.color){ o.material=o.material.clone(); o.material.transparent=true; o.material.opacity=0.7; } }); g.scale.setScalar(0.7); scene.add(g); clonesG.push(g); } }
@@ -3244,24 +3244,24 @@ Object.assign(WEVO,{gum:['area','Blubber-Apokalypse'],sock:['dur','Stinkbomben-W
 
 // ---------- weapon logic ----------
 Object.assign(WF,{
-  gum:{cd:l=>Math.max(0.9,2.2-l*0.15),fire(w){ const t=nE(); if(!t) return false; const n=1+Math.floor(w.lvl/4)+(w.evo?1:0);
-    for(let i=0;i<n;i++){ const tg=i?randomEnemyNear(P.x,P.z,14)||t:t; const sx=P.x,sz=P.z,tx=tg.x,tz=tg.z; const R=(1.8+w.lvl*0.15)*AR()*(w.evo?1.7:1), dmg=(20+w.lvl*10)*w.mul;
+  gum:{cd:l=>Math.max(0.9,2.2-l*0.15),fire(w){ const t=nE(); if(!t) return false; const n=Math.min(16,1+Math.floor(w.lvl/4)+(w.evo?1:0)+(stats.multishot-1));
+    for(let i=0;i<n;i++){ const tg=i?randomEnemyNear(P.x,P.z,14)||t:t; const sx=P.x,sz=P.z,tx=tg.x,tz=tg.z; const R=(1.8+w.lvl*0.15)*AR()*(w.evo?1.7:1)*Math.sqrt(stats.projSize), dmg=(20+w.lvl*10)*w.mul;
       ENTS.push({t:0,k:'gum',x:sx,y:1,z:sz,upd(dt){ this.t+=dt; const f=Math.min(1,this.t/0.45); this.x=sx+(tx-sx)*f; this.z=sz+(tz-sz)*f; this.y=1+Math.sin(f*Math.PI)*2.5; if(f<1) return true;
           if(!this.land){ this.land=1; this.lt=0; sfx('chomp'); burst(tx,0.3,tz,'#ff7ad8',10,5,0.2,0.4); } this.lt+=dt;
           forNear(tx,tz,R,e=>{ if(e.boss) return; const dx=tx-e.x,dz=tz-e.z,d=Math.hypot(dx,dz); if(d<R+e.r){ e.slowT=0.3; e.slowV=0.75; e.x+=dx/(d||1)*Math.min(d,3*dt); e.z+=dz/(d||1)*Math.min(d,3*dt); } });
-          if(this.lt>=1.6){ hitR(tx,tz,R,dmg,{},6); burst(tx,0.6,tz,'#ff9be6',18,8,0.25,0.5); ringFx(tx,tz,R,'#ff7ad8',0.4); sfx('boom'); return false; } return true; },
-        draw(){ if(!this.land) P2.gum.add(this.x,this.y,this.z,0.6,0.6,0.6,this.t*6,this.t*4,0,WHITE); else { const s=R*(0.45+0.08*Math.sin(this.lt*9))*Math.min(1,this.lt*5); P2.gum.add(tx,0.25,tz,s,0.35+0.1*Math.sin(this.lt*7),s,0,this.lt,0,WHITE); gfxAdd(tx,tz,R,5,Math.min(1,(1.6-this.lt)*4),0.3,this.lt); } }}); }
+          if(this.lt>=1.6*DUR()){ hitR(tx,tz,R,dmg,{},6); burst(tx,0.6,tz,'#ff9be6',18,8,0.25,0.5); ringFx(tx,tz,R,'#ff7ad8',0.4); sfx('boom'); return false; } return true; },
+        draw(){ if(!this.land) P2.gum.add(this.x,this.y,this.z,0.6,0.6,0.6,this.t*6,this.t*4,0,WHITE); else { const s=R*(0.45+0.08*Math.sin(this.lt*9))*Math.min(1,this.lt*5); P2.gum.add(tx,0.25,tz,s,0.35+0.1*Math.sin(this.lt*7),s,0,this.lt,0,WHITE); gfxAdd(tx,tz,R,5,Math.min(1,(1.6*DUR()-this.lt)*4),0.3,this.lt); } }}); }
     sfx('whoosh'); }},
-  sock:{cd:l=>Math.max(0.7,1.8-l*0.12),fire(w){ const t=nE(); if(!t) return false; const hits=new Set(); let left=2+Math.floor(w.lvl/3)+(w.evo?3:0); const dmg=(12+w.lvl*6)*w.mul;
+  sock:{cd:l=>Math.max(0.7,1.8-l*0.12),fire(w){ const t=nE(); if(!t) return false; const hits=new Set(); let left=2+Math.floor(w.lvl/3)+(w.evo?3:0)+stats.bounce*2+stats.pierce; const dmg=(12+w.lvl*6)*w.mul;
     ENTS.push({k:'sock',x:P.x,y:1,z:P.z,tg:t,r:0,life:4,upd(dt){ this.life-=dt; this.r+=dt*14; if(this.life<=0) return false; let tg=this.tg; if(!tg||!tg.alive){ tg=this.tg=nearestEnemy(this.x,this.z,10,[...hits]); if(!tg) return false; }
         const dx=tg.x-this.x,dz=tg.z-this.z,d=Math.hypot(dx,dz); const sp=16*dt; this.x+=dx/(d||1)*Math.min(d,sp); this.z+=dz/(d||1)*Math.min(d,sp);
         if(d<tg.r+0.5){ hitEnemy(tg,dmg,dx/(d||1)*4,dz/(d||1)*4,{el:'poison'}); hits.add(tg); puddles.push({x:tg.x,z:tg.z,R:(1.3+(w.evo?0.8:0))*AR(),t:0,dur:2.5*DUR(),dps:dmg*0.35,tk:0}); burst(tg.x,0.6,tg.z,'#b6ff6a',6,4,0.18,0.4); left--; if(left<=0) return false; this.tg=nearestEnemy(this.x,this.z,10,[...hits]); if(!this.tg) return false; } return true; },
       draw(){ P2.sock.add(this.x,this.y+Math.sin(this.r)*0.2,this.z,1,1,1,this.r,this.r*0.7,0,WHITE); if(Math.random()<0.3) glow(this.x,this.y,this.z,'#b6ff6a',0.3,0.4,0.1,0,0.6,0); }}); sfx('whoosh'); }},
-  disco:{cd:l=>Math.max(0.9,3-l*0.2),fire(w){ const n=2+Math.floor(w.lvl/2)+(w.evo?4:0); const dmg=(14+w.lvl*7)*w.mul; const set=new Set(); let any=false; const bx=P.x,by=3.6,bz=P.z;
-    for(let i=0;i<n;i++){ const e=randomEnemyNear(P.x,P.z,12); if(!e||set.has(e)) continue; set.add(e); any=true; const col=['#ff3ad1','#3ad1ff','#ffd23f','#7ee05a','#ff7a1a'][i%5];
-      seg(bx,by,bz,e.x,0.8,e.z,col,2.4,0.32,2); hitEnemy(e,dmg,0,0,{el:'light'}); if(!e.boss) e.stun=Math.max(e.stun||0,0.7); ringFx(e.x,e.z,1.2,col,0.4); glow(e.x,0.5,e.z,col,1,0.35,3); }
+  disco:{cd:l=>Math.max(0.9,3-l*0.2),fire(w){ const n=Math.min(16,2+Math.floor(w.lvl/2)+(w.evo?4:0)+(stats.multishot-1)); const dmg=(14+w.lvl*7)*w.mul; const set=new Set(); let any=false; const bx=P.x,by=3.6,bz=P.z;
+    for(let i=0;i<n;i++){ const e=randomEnemyNear(P.x,P.z,12*Math.sqrt(AREA())); if(!e||set.has(e)) continue; set.add(e); any=true; const col=['#ff3ad1','#3ad1ff','#ffd23f','#7ee05a','#ff7a1a'][i%5];
+      seg(bx,by,bz,e.x,0.8,e.z,col,2.4,0.32,2); hitEnemy(e,dmg,0,0,{el:'light'}); if(!e.boss) e.stun=Math.max(e.stun||0,0.7*DUR()); ringFx(e.x,e.z,1.2,col,0.4); glow(e.x,0.5,e.z,col,1,0.35,3); }
     if(!any) return false; sfx('zap'); }},
-  tooth:{update(w,dt){ const n=1+Math.floor(w.lvl/3)+(w.evo?2:0); w.tt=w.tt||[]; while(w.tt.length<n) w.tt.push({x:P.x+rand(-1,1),z:P.z+rand(-1,1),y:0,ph:Math.random()*6,cd:0,tg:null,open:0,ry:0}); w.tt.length=n; const dmg=(10+w.lvl*6)*w.mul;
+  tooth:{update(w,dt){ const n=Math.min(16,1+Math.floor(w.lvl/3)+(w.evo?2:0)+(stats.multishot-1)); w.tt=w.tt||[]; while(w.tt.length<n) w.tt.push({x:P.x+rand(-1,1),z:P.z+rand(-1,1),y:0,ph:Math.random()*6,cd:0,tg:null,open:0,ry:0}); w.tt.length=n; const dmg=(10+w.lvl*6)*w.mul;
     for(const t of w.tt){ t.ph+=dt*9; t.cd-=dt; t.open=Math.max(0,t.open-dt*6); if(!t.tg||!t.tg.alive||Math.hypot(t.tg.x-P.x,t.tg.z-P.z)>12) t.tg=randomEnemyNear(P.x,P.z,9);
       let tx=P.x+Math.cos(t.ph*0.1)*1.5, tz=P.z+Math.sin(t.ph*0.1)*1.5; if(t.tg){ tx=t.tg.x; tz=t.tg.z; } const dx=tx-t.x,dz=tz-t.z,d=Math.hypot(dx,dz);
       if(d>0.3){ const sp=(7+w.lvl*0.4)*dt; t.x+=dx/d*Math.min(d,sp); t.z+=dz/d*Math.min(d,sp); t.ry=Math.atan2(dx,dz); } t.y=Math.abs(Math.sin(t.ph))*0.6;
@@ -3276,34 +3276,34 @@ Object.assign(WF,{
     if(w.tg){ w.st=Math.min(4,(w.st||0)+dt); if(w.tk<=0){ w.tk=0.12; const m=1+w.st*0.6; const dmg=(3+w.lvl*1.5)*w.mul*m; hitEnemy(w.tg,dmg,0,0,{dot:true,el:'shadow'});
       if(w.evo){ const ex=w.tg.x,ez=w.tg.z,dx=ex-P.x,dz=ez-P.z,L=Math.hypot(dx,dz)||1; forNear((P.x+ex)/2,(P.z+ez)/2,L/2+1,e=>{ if(e===w.tg) return; const t=((e.x-P.x)*dx+(e.z-P.z)*dz)/(L*L); if(t<0||t>1.6) return; const px=P.x+dx*t,pz=P.z+dz*t; if(Math.hypot(e.x-px,e.z-pz)<e.r+0.5) hitEnemy(e,dmg*0.6,0,0,{dot:true}); }); } } } }},
   clock:{cd:l=>Math.max(3,7-l*0.4),fire(w){ if(!nearestEnemy(P.x,P.z,9)) return false; const R=(5+w.lvl*0.3)*AR()*(w.evo?1.5:1), dmg=(30+w.lvl*15)*w.mul*(w.evo?2:1); const cx=P.x,cz=P.z; const marked=[];
-    ENTS.push({k:'clock',t:0,upd(dt){ this.t+=dt; if(this.t>0.7&&!this.cu){ this.cu=1; sfx('ping'); ringFx(cx,cz,R,'#7fd0ff',0.6); forNear(cx,cz,R,e=>{ if(Math.hypot(e.x-cx,e.z-cz)<R+e.r){ marked.push(e); if(!e.boss) e.stun=Math.max(e.stun||0,1.6); e.slowT=1.6; e.slowV=0.95; } }); if(w.evo) for(let i=ebullets.length-1;i>=0;i--){ const b=ebullets[i]; if(Math.hypot(b.x-cx,b.z-cz)<R) ebullets.splice(i,1); } }
+    ENTS.push({k:'clock',t:0,upd(dt){ this.t+=dt; if(this.t>0.7&&!this.cu){ this.cu=1; sfx('ping'); ringFx(cx,cz,R,'#7fd0ff',0.6); forNear(cx,cz,R,e=>{ if(Math.hypot(e.x-cx,e.z-cz)<R+e.r){ marked.push(e); if(!e.boss) e.stun=Math.max(e.stun||0,1.6*DUR()); e.slowT=1.6*DUR(); e.slowV=0.95; } }); if(w.evo) for(let i=ebullets.length-1;i>=0;i--){ const b=ebullets[i]; if(Math.hypot(b.x-cx,b.z-cz)<R) ebullets.splice(i,1); } }
         if(this.t>2.3){ for(const e of marked) if(e.alive){ hitEnemy(e,dmg,0,0,{el:'frost'}); glow(e.x,1,e.z,'#bff4ff',0.8,0.3,2); } ringFx(cx,cz,R*0.8,'#ffffff',0.4); sfx('boom'); return false; } return true; },
       draw(){ const s=Math.min(1,this.t*4)*(this.t>2.0?Math.max(0,(2.3-this.t)/0.3):1); P2.clock.add(cx,3.4,cz,s,s,s,0,Math.sin(this.t*2)*0.3,0,WHITE); const pop=this.t>0.6&&this.t<1.3?Math.sin((this.t-0.6)/0.7*Math.PI):0; P2.bird.add(cx,3.85,cz+0.3+pop*0.6,s,s,s,0,0,0,WHITE); if(this.cu&&this.t<2.3) for(const e of marked) if(e.alive&&Math.random()<0.15) glow(e.x,1.2,e.z,'#7fd0ff',0.4,0.3,0.1,0,0.5,0); }}); }},
-  piano:{cd:l=>Math.max(1.2,3.6-l*0.25),fire(w){ const n=1+Math.floor(w.lvl/3)+(w.evo?2:0); let any=false; const dmg=(45+w.lvl*22)*w.mul, R=2.4*AR()*(w.evo?1.4:1);
+  piano:{cd:l=>Math.max(1.2,3.6-l*0.25),fire(w){ const n=Math.min(16,1+Math.floor(w.lvl/3)+(w.evo?2:0)+(stats.multishot-1)); let any=false; const dmg=(45+w.lvl*22)*w.mul, R=2.4*AR()*(w.evo?1.4:1)*Math.sqrt(stats.projSize);
     for(let i=0;i<n;i++){ const e=randomEnemyNear(P.x,P.z,13); if(!e) continue; any=true; const x=e.x,z=e.z, ry=Math.random()*TAU, d=i*0.15;
       tele(x,z,R,0.7+d,'#ffffff',()=>{}); ENTS.push({k:'piano',t:-d,upd(dt){ this.t+=dt; if(this.t>=0.7&&!this.hit){ this.hit=1; hitR(x,z,R,dmg,{el:'force'},10); addShake(0.25); sfx('boom'); burst(x,0.5,z,'#ffffff',10,8,0.25,0.5); for(let k=0;k<6;k++) glow(x+rand(-1,1),1,z+rand(-1,1),pick(['#ff3ad1','#3ad1ff','#ffd23f']),0.6,1,0.15,rand(-1,1),2.5,rand(-1,1)); } return this.t<1.3; },
         draw(){ if(this.t<0) return; const y=this.t<0.7?14*(1-(this.t/0.7)**2):0; const sq=this.t>=0.7?Math.max(0.55,1-(this.t-0.7)*0.8):1; const s=R/2.4*0.75; P2.piano.add(x,y,z,s*(2-sq),s*sq,s*(2-sq),0,ry,0,WHITE); }}); }
     if(!any) return false; }},
-  bees:{update(w,dt){ const n=Math.min(w.evo?20:14,3+w.lvl+(w.evo?6:0)); w.bb=w.bb||[]; while(w.bb.length<n) w.bb.push({x:P.x,z:P.z,y:2,ph:Math.random()*TAU,cd:Math.random(),tg:null}); w.bb.length=n; const dmg=(5+w.lvl*2.5)*w.mul;
+  bees:{update(w,dt){ const n=Math.min(16,Math.min(w.evo?20:14,3+w.lvl+(w.evo?6:0))+(stats.multishot-1)); w.bb=w.bb||[]; while(w.bb.length<n) w.bb.push({x:P.x,z:P.z,y:2,ph:Math.random()*TAU,cd:Math.random(),tg:null}); w.bb.length=n; const dmg=(5+w.lvl*2.5)*w.mul;
     for(const b of w.bb){ b.ph+=dt*(3+Math.random()); b.cd-=dt; if(!b.tg||!b.tg.alive||Math.hypot(b.tg.x-P.x,b.tg.z-P.z)>9) b.tg=Math.random()<dt*3?randomEnemyNear(P.x,P.z,7):b.tg;
       let tx,tz,ty; if(b.tg&&b.tg.alive){ tx=b.tg.x+Math.cos(b.ph*3)*0.5; tz=b.tg.z+Math.sin(b.ph*3)*0.5; ty=1+Math.sin(b.ph*5)*0.3; } else { const r=2.5+Math.sin(b.ph*0.7)*0.8; tx=P.x+Math.cos(b.ph)*r; tz=P.z+Math.sin(b.ph)*r; ty=2+Math.sin(b.ph*4)*0.4; }
       const k=Math.min(1,dt*7); b.vx=(tx-b.x)*k; b.vz=(tz-b.z)*k; b.x+=b.vx; b.z+=b.vz; b.y+=(ty-b.y)*k;
       if(b.tg&&b.tg.alive&&b.cd<=0&&Math.hypot(b.tg.x-b.x,b.tg.z-b.z)<b.tg.r+0.6){ b.cd=0.5; hitEnemy(b.tg,dmg,0,0,{el:'poison'}); b.tg.poison=Math.max(b.tg.poison||0,1.5); } } }},
-  duck:{cd:l=>Math.max(0.8,2.2-l*0.14),fire(w){ const n=(3+Math.floor(w.lvl/2))*(w.evo?2:1); const dmg=(16+w.lvl*8)*w.mul, R=1.8*AR(); const a0=Math.random()*TAU;
+  duck:{cd:l=>Math.max(0.8,2.2-l*0.14),fire(w){ const n=Math.min(16,(3+Math.floor(w.lvl/2))*(w.evo?2:1)+(stats.multishot-1)); const dmg=(16+w.lvl*8)*w.mul, R=1.8*AR()*Math.sqrt(stats.projSize); const a0=Math.random()*TAU;
     for(let i=0;i<n;i++){ const a=a0+i/n*TAU; let life=3;
-      ENTS.push({k:'duck',x:P.x,z:P.z,a,t:Math.random(),upd(dt){ this.t+=dt; life-=dt; if(life<=0) return false; this.x+=Math.sin(a)*4.5*dt; this.z+=Math.cos(a)*4.5*dt; let hit=null; forNear(this.x,this.z,1,e=>{ if(!hit&&Math.hypot(e.x-this.x,e.z-this.z)<e.r+0.5) hit=e; });
-          if(hit){ hitR(this.x,this.z,R,dmg,{el:'frost'},16); ringFx(this.x,this.z,R,'#ffe14d',0.35); burst(this.x,0.6,this.z,'#ffe14d',8,5,0.18,0.35); sfx('chomp'); return false; } return true; },
-        draw(){ P2.duck.add(this.x,Math.abs(Math.sin(this.t*10))*0.12,this.z,1,1,1,0,a,Math.sin(this.t*10)*0.25,WHITE); }}); }
+      ENTS.push({k:'duck',x:P.x,z:P.z,a,t:Math.random(),pl:stats.pierce,hs:new Set(),upd(dt){ this.t+=dt; life-=dt; if(life<=0) return false; this.x+=Math.sin(a)*4.5*dt; this.z+=Math.cos(a)*4.5*dt; let hit=null; forNear(this.x,this.z,1,e=>{ if(!hit&&!this.hs.has(e)&&Math.hypot(e.x-this.x,e.z-this.z)<e.r+0.5) hit=e; });
+          if(hit){ hitR(this.x,this.z,R,dmg,{el:'frost'},16); ringFx(this.x,this.z,R,'#ffe14d',0.35); burst(this.x,0.6,this.z,'#ffe14d',8,5,0.18,0.35); sfx('chomp'); this.hs.add(hit); if(this.pl-->0) return true; return false; } return true; },
+        draw(){ P2.duck.add(this.x,Math.abs(Math.sin(this.t*10))*0.12,this.z,stats.projSize,stats.projSize,stats.projSize,0,a,Math.sin(this.t*10)*0.25,WHITE); }}); }
     sfx('shoot'); }},
   whip:{cd:l=>Math.max(0.6,1.6-l*0.1),fire(w){ const t=nE(9); if(!t) return false; const a=Math.atan2(t.x-P.x,t.z-P.z), R=(2.8+w.lvl*0.1)*stats.size*AR()*(w.evo?1.8:1), span=w.evo?Math.PI:1.25; const dmg=(20+w.lvl*10)*w.mul; const hits=new Set();
     ENTS.push({k:'whip',t:0,upd(dt){ this.t+=dt; const f=Math.min(1,this.t/0.25); this.ang=a-span+2*span*f; const fx=P.x+Math.sin(this.ang)*R, fz=P.z+Math.cos(this.ang)*R;
         for(let s=0.4;s<=1.01;s+=0.3) hitR(P.x+Math.sin(this.ang)*R*s,P.z+Math.cos(this.ang)*R*s,0.9*(w.evo?1.6:1),dmg,{el:'frost'},18,hits);
         if(Math.random()<0.6) burst(fx,0.8,fz,'#7fd0ff',2,3,0.15,0.3); return this.t<0.3; },
       draw(){ const s=R/2.8*(w.evo?1.3:1); const fx=P.x+Math.sin(this.ang)*R*0.75, fz=P.z+Math.cos(this.ang)*R*0.75; P2.fish.add(fx,0.9,fz,s,s,s*1.2,0,this.ang+Math.PI/2,Math.sin(this.t*40)*0.3,WHITE); }}); sfx('whoosh'); }},
-  hand:{cd:l=>Math.max(1.5,4-l*0.25),fire(w){ const n=w.evo?3:1; let any=false; const dmg=(40+w.lvl*18)*w.mul, R=2.8*AR();
+  hand:{cd:l=>Math.max(1.5,4-l*0.25),fire(w){ const n=Math.min(16,w.evo?3:1+(stats.multishot-1)); let any=false; const dmg=(40+w.lvl*18)*w.mul, R=2.8*AR();
     for(let i=0;i<n;i++){ let tg=null; forNear(P.x,P.z,12,e=>{ if(!tg||(e.maxHp>tg.maxHp)) tg=e; }); if(i) tg=randomEnemyNear(P.x,P.z,12)||tg; if(!tg) continue; any=true; const e=tg;
       ENTS.push({k:'hand',t:-i*0.25,x:e.x,z:e.z,upd(dt){ this.t+=dt; if(this.t<0) return true; if(this.t<0.15){ this.x=e.alive?e.x:this.x; this.z=e.alive?e.z:this.z; }
-          if(e.alive&&this.t<0.95&&!e.boss){ e.x=this.x; e.z=this.z; e.stun=Math.max(e.stun||0,0.3); }
+          if(e.alive&&this.t<0.95&&!e.boss){ e.x=this.x; e.z=this.z; e.stun=Math.max(e.stun||0,0.3*DUR()); }
           if(this.t<0.15&&!this.snd){ this.snd=1; sfx('chaos'); }
           if(this.t>=0.95&&!this.hit){ this.hit=1; if(e.alive) hitEnemy(e,dmg,0,0,{el:'shadow'}); hitR(this.x,this.z,R,dmg*0.6,{el:'shadow'},10); addShake(0.3); sfx('boom'); burst(this.x,0.4,this.z,'#7a3aff',18,8,0.28,0.55); ringFx(this.x,this.z,R,'#b57bff',0.45); for(let k=0;k<8;k++){ const a=k/8*TAU; glow(this.x,0.4,this.z,'#b57bff',0.6,0.6,0.1,Math.cos(a)*6,1.5,Math.sin(a)*6); } }
           return this.t<1.45; },
@@ -3315,17 +3315,17 @@ Object.assign(WF,{
            }}); }
     if(!any) return false; }},
   horn:{cd:l=>Math.max(0.9,2.2-l*0.12),fire(w){ const t=nE(9); if(!t) return false; const base=Math.atan2(t.x-P.x,t.z-P.z), L=(6+w.lvl*0.4)*AR(), dmg=(12+w.lvl*6)*w.mul; const dirs=w.evo?[0,Math.PI/2,Math.PI,-Math.PI/2]:[0];
-    for(const off of dirs){ const a=base+off; forNear(P.x+Math.sin(a)*L/2,P.z+Math.cos(a)*L/2,L/2+1,e=>{ const dx=e.x-P.x,dz=e.z-P.z,d=Math.hypot(dx,dz); if(d>L+e.r) return; let da=Math.atan2(dx,dz)-a; da=Math.atan2(Math.sin(da),Math.cos(da)); if(Math.abs(da)>0.55) return; hitEnemy(e,dmg,dx/(d||1)*16,dz/(d||1)*16,{el:'shock'}); e.slowT=2; e.slowV=0.5; });
+    for(const off of dirs){ const a=base+off; forNear(P.x+Math.sin(a)*L/2,P.z+Math.cos(a)*L/2,L/2+1,e=>{ const dx=e.x-P.x,dz=e.z-P.z,d=Math.hypot(dx,dz); if(d>L+e.r) return; let da=Math.atan2(dx,dz)-a; da=Math.atan2(Math.sin(da),Math.cos(da)); if(Math.abs(da)>0.55) return; hitEnemy(e,dmg,dx/(d||1)*16,dz/(d||1)*16,{el:'shock'}); e.slowT=2*DUR(); e.slowV=0.5; });
       for(let k=1;k<=3;k++){ const r=L*k/3; for(let j=-2;j<=2;j++){ const a1=a+j*0.22, a2=a+(j+1)*0.22; if(j===2) break; seg(P.x+Math.sin(a1)*r,1,P.z+Math.cos(a1)*r,P.x+Math.sin(a2)*r,1,P.z+Math.cos(a2)*r,'#ffd23f',1.4,0.18+k*0.05); } }
       for(let k=0;k<3;k++) glow(P.x+Math.sin(a)*2,1.4,P.z+Math.cos(a)*2,pick(['#ff3ad1','#ffd23f','#7ee05a']),0.6,0.8,0.15,Math.sin(a)*4+rand(-1,1),1.5,Math.cos(a)*4+rand(-1,1)); }
     w.blow=0.3; w.ba=base; sfx('event'); }},
   rocket:{update(w,dt){ w.tr=(w.tr||0)-dt; if(P.moving&&w.tr<=0){ w.tr=0.25; zones.push({type:'fire',x:P.x-Math.sin(P.face)*0.8,z:P.z-Math.cos(P.face)*0.8,R:(w.evo?1.5:1)*AR(),t:0,dur:1.6*DUR(),dps:(6+w.lvl*3)*w.mul}); }
-    w.rc=(w.rc||1)-dt*stats.haste; if(w.rc<=0){ const n=(1+Math.floor(w.lvl/3))*(w.evo?2:1); let any=false; const dmg=(30+w.lvl*14)*w.mul;
+    w.rc=(w.rc||1)-dt*stats.haste; if(w.rc<=0){ const n=Math.min(16,(1+Math.floor(w.lvl/3))*(w.evo?2:1)+(stats.multishot-1)); let any=false; const dmg=(30+w.lvl*14)*w.mul;
       for(let i=0;i<n;i++){ const e=randomEnemyNear(P.x,P.z,13); if(!e) continue; any=true; const sx=P.x,sz=P.z,tx=e.x,tz=e.z, dur=0.75+Math.random()*0.2, side=rand(-3,3);
         ENTS.push({k:'rocket',t:-i*0.08,x:sx,y:1.5,z:sz,upd(dt){ this.t+=dt; if(this.t<0) return true; const f=Math.min(1,this.t/dur); const px=this.x,py=this.y,pz=this.z;
             const bx=sx-Math.sin(P.face)*3+side, bz=sz-Math.cos(P.face)*3; const u=1-f; this.x=u*u*sx+2*u*f*bx+f*f*tx; this.z=u*u*sz+2*u*f*bz+f*f*tz; this.y=1.5+Math.sin(f*Math.PI)*5-f*1.4; this.dx=this.x-px; this.dy=this.y-py; this.dz=this.z-pz;
             if(Math.random()<0.8) glow(px,py,pz,Math.random()<0.5?'#ffb21a':'#ffffff',0.35,0.35,0.05,0,0.3,0);
-            if(f>=1){ explode(tx,tz,2*AR(),dmg,'#ff7a1a',8); return false; } return true; },
+            if(f>=1){ explode(tx,tz,2*AR()*Math.sqrt(stats.projSize),dmg,'#ff7a1a',8); return false; } return true; },
           draw(){ if(this.t<0) return; const yaw=Math.atan2(this.dx||0,this.dz||1), pitch=-Math.atan2(this.dy||0,Math.hypot(this.dx||0,this.dz||0)); P2.rocket.add(this.x,this.y,this.z,1,1,1,pitch,yaw,0,WHITE); }}); }
       w.rc=any?Math.max(0.8,2-w.lvl*0.12):0.3; if(any) sfx('shoot'); } }}});
 
@@ -3504,7 +3504,7 @@ for(const k in AF){ const f=AF[k]; const src=Object.values(f).filter(v=>typeof v
 function affectedBy(pk){ const out=[]; const g=GLOBAL_TAGS[pk];
   for(const k in W) if(g||(USES['w:'+k]&&USES['w:'+k].has(pk))) out.push(WEAPONS[k].icon);
   for(const k in AU) if((g&&pk!=='vamp')||(USES['a:'+k]&&USES['a:'+k].has(pk))) out.push(AURAS[k].icon);
-  if(g&&pk!=='haste') for(const c of comps) out.push(COMPS[c.key].icon);
+  if(g) for(const c of comps) out.push(COMPS[c.key].icon);
   return out; }
 function boostsOf(kind,key){ const u=USES[kind+':'+key]; if(!u) return []; const out=[]; for(const pk in have){ if(!have[pk]) continue; if(u.has(pk)){ const p=PASSIVES.find(q=>q.key===pk); if(p) out.push(p.icon); } } return out; }
 { const ci=cardInfo; cardInfo=function(c){ const i=ci(c);
@@ -3664,6 +3664,23 @@ function drawDead(rt){
   starPool.end(); spikePool.end(); prismPool.end(); puffPool.end(); bmMesh.count=bmN; bmMesh.instanceMatrix.needsUpdate=true; bmCol.needsUpdate=true; bmPar.needsUpdate=true; }; }
 { const cf=clearField; clearField=function(){ cf(); puffs.length=0; decals.length=0; novas.length=0; }; }
 { const up=update; update=function(dt){ curWK=null; up(dt); }; }
+// =====================================================================
+// ============ ALL SKILLS REACT TO BUFFS ==============================
+// =====================================================================
+// extra casts for weapons that have no own count (multishot)
+const REPEAT_W=['charge','bonk','frost','yoyo','clock','whip','horn','sock'];
+const recast=[];
+for(const k of REPEAT_W){ const f=WF[k].fire; WF[k].fire=function(w){ const r=f(w); if(r!==false&&!w._re){ const n=Math.min(4,stats.multishot-1); for(let i=1;i<=n;i++) recast.push({k,w,t:i*0.14}); } return r; }; }
+{ const up=update; update=function(dt){ up(dt); if(state!=='play') return; for(let i=recast.length-1;i>=0;i--){ const c=recast[i]; c.t-=dt; if(c.t>0) continue; recast.splice(i,1); if(!W[c.k]) continue; c.w._re=true; curWK=c.k; curEl=(W_EL[c.k]||[null])[0]; try{ WF[c.k].fire(c.w); }catch(_){} c.w._re=false; curWK=null; } }; }
+{ const cf=clearField; clearField=function(){ cf(); recast.length=0; }; }
+// continuous weapons without a count get stronger per extra shot
+for(const k of ['eye','flame']){ const f=WF[k].update; WF[k].update=function(w,dt){ const m0=w.mul; w.mul=m0*(1+0.3*(stats.multishot-1)); f(w,dt); w.mul=m0; }; }
+// card info: what each skill now uses
+const ADD_TAGS={charge:'multi,pierce',bonk:'multi',frost:'multi',yoyo:'multi',clock:'multi,dur',whip:'multi',horn:'multi,dur',sock:'multi,bounce,pierce',eye:'multi',flame:'multi',zap:'area,pierce,bounce',disco:'area,dur,multi',gum:'dur,big,multi',duck:'pierce,big,multi',piano:'big,multi',rocket:'big,multi',hand:'dur,multi',tooth:'multi',bees:'multi',saws:'multi',bombs:'multi',boomer:'multi',meteor:'multi',missile:'multi',tornado:'multi'};
+for(const k in ADD_TAGS){ const u=USES['w:'+k]; if(u) ADD_TAGS[k].split(',').forEach(t=>u.add(t)); }
+for(const k in AF){ const u=USES['a:'+k]; if(u) u.add('haste'); }
+// haste/dmg/crit are global already; make the "Wirkt auf" line include auras/companions for haste too
+{ const ab=affectedBy; affectedBy=function(pk){ return ab(pk); }; }
 // =====================================================================
 // ============ VOXEL ICON SYSTEM (replaces emojis everywhere) =========
 // =====================================================================
