@@ -1835,8 +1835,12 @@ function intentHtml(e) {
   if (m.st) for (const k in m.st) o.push(ic(k, m.st[k], `<b>${STAT[k].n} ${m.st[k]}</b><br>${STAT[k].d}`));
   return o.join('');
 }
+function monsterY() {
+  const top = $('#ePanel').getBoundingClientRect().bottom, bot = $('#instWrap').getBoundingClientRect().top; if (!(bot > top)) return null;
+  const cy = (top + bot) / 2 + (bot - top) * .04, z = innerWidth < innerHeight ? 8.6 : 6.6; return (1 - 2 * cy / innerHeight) * Math.tan(25 * Math.PI / 180) * z;
+}
 function renderAll() {
-  if (!cb) return; const e = cb.enemy, sc = $('#s-combat'); topBar('#cBar');
+  if (!cb) return; requestAnimationFrame(() => { const y = monsterY(); if (y != null && cb) GFX.place(y); }); const e = cb.enemy, sc = $('#s-combat'); topBar('#cBar');
   $('#eName').textContent = e.n; $('#eHp').style.width = clamp(e.hp / e.max * 100, 0, 100) + '%'; $('#eHpT').textContent = `${Math.max(0, e.hp)} / ${e.max}`;
   $('#eStat').innerHTML = (e.tr ? `<button class="chip tr" data-tr="${e.tr}">✦ ${TRAITS[e.tr].n}${e.tr === 'mask' ? ': immun ' + WLN[e.immune] : ''}${e.tr === 'revive' && e.revived ? ' (verbraucht)' : ''}</button>` : '') + (e.block ? `<span class="chip" style="color:${COL.C}">Block ${e.block}</span>` : '') + (e.befall ? `<span class="chip" style="color:${COL.G}">Befall ${e.befall}</span>` : '') + (e.thorns ? `<span class="chip" style="color:${COL.M}">Dornen ${e.thorns}</span>` : '') + stChips(e.st) + (e.weak ? `<span class="chip">Schwäche ${e.weak}</span>` : '') + (e.vuln ? `<span class="chip">Verwundbar ${e.vuln}</span>` : '');
   $('#intent').innerHTML = cb.over ? '' : intentHtml(e);
