@@ -567,8 +567,10 @@ const Sfx = (() => {
 
 /* ---------- Musik: music/*.mp3 mit Überblendung, nahtloser Schleife und Analyse für die Effekte ---------- */
 const Mus = (() => {
-  const NAMES = ['menu', 'combat', 'boss', 'fracture'], OFF = { combat: 5 }, tr = {}, VOL = .55, XF = 1.6, lv = { bass: 0, mid: 0, high: 0, beat: 0, avg: .2, last: 0 };
-  let ac = null, an = null, data = null, cur = null, want = null, on = true, pre = false;
+  const POOL = ['combat', 'combat2', 'combat3', 'combat4', 'combat5'], NAMES = ['menu', 'boss', 'fracture'].concat(POOL), OFF = { combat: 5 }, tr = {}, VOL = .55, XF = 1.6, lv = { bass: 0, mid: 0, high: 0, beat: 0, avg: .2, last: 0 };
+  let ac = null, an = null, data = null, cur = null, want = null, on = true, pre = false, fightC = POOL[Math.random() * POOL.length | 0], nextC = fightC;
+  function warm(k) { const a = tr[k] && tr[k].els[0]; if (a && a.preload !== 'auto') { a.preload = 'auto'; try { a.load(); } catch (e) { } } }
+  function newFight() { const ok = POOL.filter(k => tr[k] && !tr[k].bad); if (!ok.length) return; fightC = ok.includes(nextC) ? nextC : ok[0]; const rest = ok.filter(k => k !== fightC); nextC = rest.length ? rest[Math.random() * rest.length | 0] : fightC; if (pre) warm(nextC); }
   function mk(k) { const a = new Audio(); a.preload = 'none'; a.src = 'music/' + k + '.mp3'; a._v = 0; a.volume = 0; a.onerror = () => { tr[k].bad = true; if (cur === k) cur = null; }; return a; }
   function load() { NAMES.forEach(k => { tr[k] = { bad: false, i: 0 }; tr[k].els = [mk(k), mk(k)]; }); setInterval(tick, 100); }
   function setV(a, v) { a._v = v; if (a._g) a._g.gain.value = v; else a.volume = Math.max(0, Math.min(1, v)); }
@@ -583,7 +585,7 @@ const Mus = (() => {
     if (a.currentTime > a.duration - XF) { const b = t.els[1 - t.i]; t.i = 1 - t.i; try { b.currentTime = OFF[cur] || 0; } catch (e) { } setV(b, 0); const pr = b.play(); if (pr && pr.then) pr.catch(() => { }); fade(b, VOL, XF * 1000); fade(a, 0, XF * 1000, () => a.pause()); }
   }
   function play(k) {
-    want = k; if (!on || !tr[k] || tr[k].bad || cur === k) return; const prev = cur; cur = k;
+    if (k === 'combat') k = fightC; want = k; if (!on || !tr[k] || tr[k].bad || cur === k) return; const prev = cur; cur = k;
     if (prev) tr[prev].els.forEach(a => { if (!a.paused) fade(a, 0, 320, () => a.pause()); });
     const t = tr[k], a = t.els[t.i]; try { a.currentTime = OFF[k] || 0; } catch (e) { } setV(a, VOL * .35); if (ac && ac.state === 'suspended') ac.resume();
     const pr = a.play(); if (pr && pr.then) pr.then(() => { fade(a, VOL, 250); if (typeof Sfx !== 'undefined') Sfx.duck(true); }).catch(() => { if (cur === k) cur = null; });
@@ -596,7 +598,7 @@ const Mus = (() => {
     if (bass > lv.avg * 1.18 && bass > .3 && now - lv.last > 220) { lv.beat = 1; lv.last = now; } else lv.beat *= .86;
     return lv;
   }
-  return { load, play, attach, level, kick() { if (!pre) { pre = true; NAMES.forEach(k => { const a = tr[k] && tr[k].els[0]; if (a) { a.preload = 'auto'; try { a.load(); } catch (e) { } } }); } if (want && cur !== want) play(want); }, toggle(v) { on = v; if (!on) { if (cur) tr[cur].els.forEach(a => a.pause()); cur = null; if (typeof Sfx !== 'undefined') Sfx.duck(false); } else if (want) play(want); } };
+  return { load, play, attach, level, newFight, kick() { if (!pre) { pre = true; ['menu', 'boss', 'fracture', fightC].forEach(warm); } if (want && cur !== want) play(want); }, toggle(v) { on = v; if (!on) { if (cur) tr[cur].els.forEach(a => a.pause()); cur = null; if (typeof Sfx !== 'undefined') Sfx.duck(false); } else if (want) play(want); } };
 })();
 /* ---------- three.js Szene: gepixelte Toon-Wesen mit Raster-Schattierung ---------- */
 const GFX = (() => {
@@ -1653,7 +1655,7 @@ function startCombat(key, kind) {
   cb = { kind, key, turn: 0, energy: 3, block: 0, inst: CHARS[run.char].base, chain: 0, chainWl: null, played: 0, last: null, frac: null, busy: true, over: false, hand: [], discard: [], exhaust: [], rot: [], autoQ: [], drain: 0, less: 0, peeks: 0, gift: 0, atkN: 0, over4: 0, befDmg: 0, stolen: [], st: {}, cmd: null, cmdBonus: 0, twice: 0, draw: shuffle(run.deck.slice()),
     enemy: { n: d.n, hp: Math.round(d.hp * sc), max: Math.round(d.hp * sc), block: 0, befall: hasRelic('ei') ? 5 : 0, weak: 0, vuln: 0, thorns: d.thorns || 0, bonus: (d.boss ? 0 : 2 + Math.floor(row / 2)) + asc, moves: d.moves, mi: 0, phase2: false, sick: false, tr: d.tr, immune: 'V', st: {} } };
   cb.enemy.intent = cb.enemy.moves[0]; run.deck.forEach(c => { c.free = false; c.hidden = false; c.seen = false; }); selUid = null;
-  show('s-combat'); GFX.show(key, { y: innerWidth < innerHeight ? 1.45 : 1.15, scale: innerWidth < innerHeight ? .92 : .72 }); GFX.setFracture(false); if (d.boss) banner(d.title); Sfx.init(); Mus.play(d.boss ? 'boss' : 'combat');
+  show('s-combat'); GFX.show(key, { y: innerWidth < innerHeight ? 1.45 : 1.15, scale: innerWidth < innerHeight ? .92 : .72 }); GFX.setFracture(false); if (d.boss) banner(d.title); Sfx.init(); if (!d.boss) Mus.newFight(); Mus.play(d.boss ? 'boss' : 'combat');
   if (hasDis('bruch')) triggerFracture(true);
   if (!meta.tipSwipe && !K.fast) { meta.tipSwipe = true; save(); setTimeout(() => toast('Wische eine Karte <b>nach oben</b>, um sie zu spielen. Antippen zeigt sie groß.', 4200), 1400); }
   setTimeout(startTurn, K.fast ? 0 : 600);
