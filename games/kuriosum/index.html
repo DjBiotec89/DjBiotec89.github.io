@@ -216,6 +216,18 @@ body.fractured #app{animation:fracW 2.4s steps(1) infinite}@keyframes fracW{0%,9
 
 #amb{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;image-rendering:pixelated;opacity:.9}
 .float{animation-fill-mode:both}
+
+/* --- Absichts-Icons der Monster --- */
+#intent{gap:10px;min-height:46px;margin-top:2px}
+.ic{position:relative;display:inline-flex;align-items:flex-end;background:none;border:0;padding:0;cursor:pointer;animation:bob 1s steps(2) infinite}
+.ic:nth-child(2){animation-delay:.25s}.ic:nth-child(3){animation-delay:.5s}
+.ic img{width:42px;height:42px;image-rendering:pixelated;display:block;filter:drop-shadow(3px 3px 0 rgba(0,0,0,.8))}
+.ic b{position:absolute;right:-10px;bottom:-4px;font:700 22px/1 "Pixelify Sans","VT323",monospace;color:var(--bone);text-shadow:2px 0 #000,-2px 0 #000,0 2px #000,0 -2px #000,2px 2px #000;white-space:nowrap}
+.ic.atk b{color:#ff6b6b}.ic.blk b{color:var(--C)}.ic.cold b{color:var(--bone)}
+.ic.atk img{animation:icAtk .9s steps(2) infinite}.ic.warn img{animation:icWarn .5s steps(2) infinite}
+@keyframes icAtk{50%{transform:rotate(-8deg) scale(1.08)}}@keyframes icWarn{50%{filter:drop-shadow(3px 3px 0 rgba(0,0,0,.8)) brightness(1.5)}}
+@media (prefers-reduced-motion:reduce){.ic,.ic img{animation:none}}
+#intent:not(:empty){background:rgba(0,0,0,.62);border:2px solid #3a2a2a;padding:4px 18px 6px 10px}
 </style>
 </head>
 <body>
@@ -1770,12 +1782,64 @@ function endRun(win) {
 }
 
 /* ---------- Kampf-Rendering ---------- */
-function intentHtml(e) { const m = e.intent, o = []; if (m.fracture) o.push('<span class="it i">Erzwingt Fraktur</span>'); if (m.atk) o.push(`<span class="it a">Angriff ${atkVal(e, m)}${m.n > 1 ? ' x' + m.n : ''}</span>`); if (m.blk) o.push(`<span class="it b">Block ${m.blk}</span>`); if (m.inst) o.push(`<span class="it i">Instabilität +${m.inst}</span>`); if (m.infect) o.push(`<span class="it p">Infiziert ${m.infect}</span>`); if (m.riss) o.push(`<span class="it i">Riss x${m.riss}</span>`); if (m.heal) o.push(`<span class="it p">Heilt ${m.heal}</span>`); if (m.krank && !e.sick) o.push('<span class="it a">Steckt dich an</span>'); if (m.drain) o.push(`<span class="it i">Raubt ${m.drain} Energie</span>`); if (m.less) o.push(`<span class="it i">Raubt ${m.less} Karte</span>`); if (m.mut) o.push(`<span class="it a">Entstellt ${m.mut} ${m.mut > 1 ? 'Karten' : 'Karte'}</span>`); if (m.rage) o.push(`<span class="it a">Raserei +${m.rage}</span>`); if (m.st) for (const k in m.st) o.push(`<span class="it i" style="color:${STAT[k].c};border-color:${STAT[k].c}">${STAT[k].n} ${m.st[k]}</span>`); if (e.st.starre) o.unshift('<span class="it b">Erstarrt – setzt aus</span>'); return o.join(''); }
+/* ---------- Eigene Pixel-Icons für die Absichten der Monster ---------- */
+const PXI = {
+  dagger: ['..........w', '.........ww', '........wa.', '.......wa..', '......wa...', '..r..wa....', '...rwa.....', '...ar......', '..a..r.....', '.a.........', 'a..........'],
+  sword: ['.........ww', '........wwa', '.......wwa.', '......wwa..', '.....wwa...', '.r..wwa....', '.rrwwa.....', '..rra......', '.y.rr......', 'yy..r......', 'yy.........'],
+  jaw: ['.rrrrrrrrr.', 'rdddddddddr', 'rwdwdwdwdwr', 'rw.w.w.w.wr', 'r.........r', 'r.........r', 'rw.w.w.w.wr', 'rdwdwdwdwdr', '.rrrrrrrrr.'],
+  shield: ['.wwwwwwwww.', 'wbbbbbbbbbw', 'wbbbbbbbbbw', 'wbbbbwbbbbw', 'wbbbwkwbbbw', 'wbbbbwbbbbw', '.wbbbbbbbw.', '..wbbbbbw..', '...wbbbw...', '....wbw....', '.....w.....'],
+  spiral: ['..ppppppp..', '.p.......p.', 'p..ppppp..p', 'p.p.....p.p', 'p.p.ppp.p.p', 'p.p.p.p.p.p', 'p.p.p...p.p', 'p.p.ppppp.p', 'p.p.......p', 'p..ppppppp.', '.p.........'],
+  infect: ['....ggg....', '..ggggggg..', '.ggggggggg.', '.ggwwwwggg.', 'gggwkkwgggg', 'gggwkkwgggg', '.ggwwwwggg.', '.ggggggggg.', '..g.ggg.g..', '..g..g..g..', '.g...g...g.'],
+  riss: ['.wwwwwww.', '.wkwwwww.', '.wwkwwww.', '.wwwkkww.', '.wwwwwkw.', '.wwwwkww.', '.wwwkwww.', '.wwwkwww.', '.wwwwkww.', '.wwwwwkk.', '.wwwwwww.'],
+  heal: ['.ggg.ggg.', 'ggwgggggg', 'ggggggggg', 'ggggggggg', '.ggggggg.', '..ggggg..', '...ggg...', '....g....'],
+  skull: ['..wwwwwww..', '.wwwwwwwww.', 'wwwwwwwwwww', 'wwkkwwwkkww', 'wwkkwwwkkww', 'wwwwwkwwwww', '.wwwwkwwww.', '..wwwwwww..', '..wgwgwgw..', '..ggwgwgg..'],
+  drain: ['.rrr.rrr.', 'rrrrkrrrr', 'rrrrkrrrr', 'rrrkrrrrr', '.rrrkrrr.', '..rrkrr..', '...rkr...', '....r....'],
+  less: ['.wwwwwww.', '.wwwwwww.', '.wwwwwww.', '.wwwwwww.', '.wrrrrrw.', '.wwwwwww.', '.wwwwwww.', '.wwwwwww.', '.wwwwwww.'],
+  mut: ['p.......b', '.p.....b.', '..p...b..', '...pwb...', '....w....', '...bwp...', '..b...p..', '.b.....p.', 'b.......p'],
+  rage: ['....r....', '...rr....', '...rrr.r.', '..rryrrr.', '.rryyyrr.', '.ryyyyyr.', '.ryywyyr.', '..ryyyr..', '...rrr...'],
+  frac: ['..bbbbb..', '.bwbbbbb.', 'bbbwbbbbb', 'bbbbwbbbb', 'bbbwwwbbb', 'bbwbbbwbb', 'bwbbbbbwb', '.bbbbbbb.', '..bbbbb..'],
+  wahn: ['..ppppp..', '.pwwwwwp.', 'pwwppwwwp', 'pwpkkpwwp', 'pwpkkpwwp', 'pwwppwwwp', '.pwwwwwp.', '..ppppp..'],
+  spalt: ['.wwww.bbb.', 'wwkww.bkbb', 'wwwww.bbbb', 'wwkkw.bbbb', 'wwwww.bbbb', '.www..bbb.'],
+  stimmen: ['.yyyyyyy.', 'yyyyyyyyy', 'yykykykyy', 'yyyyyyyyy', '.yyyyyyy.', '..yy.....', '.y.......'],
+  leere: ['..aaaaa..', '.aaaaaaa.', 'aaa...aaa', 'aa.....aa', 'aa.....aa', 'aa.....aa', 'aaa...aaa', '.aaaaaaa.', '..aaaaa..'],
+  starre: ['....w....', '.w..w..w.', '..w.w.w..', '...www...', 'wwwwwwwww', '...www...', '..w.w.w..', '.w..w..w.', '....w....'],
+  blut: ['....r....', '....r....', '...rrr...', '..rrrrr..', '.rrrwrrr.', '.rrwrrrr.', '.rrrrrrr.', '..rrrrr..', '...rrr...'],
+  rausch: ['....y....', '....y....', '...yyy...', 'yyyyyyyyy', '..yyyyy..', '..yy.yy..', '.yy...yy.'],
+  klar: ['...ggg...', '.gwwwwwg.', 'gwwwkwwwg', 'gwwkkkwwg', 'gwwwkwwwg', '.gwwwwwg.', '...ggg...'],
+};
+const PXC = { k: '#0a0607', w: '#efe6cf', a: '#8a8078', r: '#d1262f', d: '#a52a32', y: '#ffe14d', g: '#9fae3e', b: '#7d9cc4', p: '#d9788a', v: '#6f4d80' }, pxCache = {};
+function pxIcon(key) {
+  if (pxCache[key]) return pxCache[key]; const rows = PXI[key], h = rows.length, w = Math.max(...rows.map(r => r.length)), S = 13, ox = ((S - w) / 2) | 0, oy = ((S - h) / 2) | 0, g = [];
+  for (let y = 0; y < S; y++) g.push(Array(S).fill(null)); rows.forEach((r, y) => [...r].forEach((ch, x) => { if (ch !== '.') g[y + oy][x + ox] = PXC[ch]; }));
+  const cv = document.createElement('canvas'); cv.width = cv.height = S; const c = cv.getContext('2d');
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { if (g[y][x]) continue; if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => g[y + dy] && g[y + dy][x + dx])) { c.fillStyle = PXC.k; c.fillRect(x, y, 1, 1); } }
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (g[y][x]) { c.fillStyle = g[y][x]; c.fillRect(x, y, 1, 1); }
+  return (pxCache[key] = cv.toDataURL());
+}
+function ic(key, num, tip, cls) { return `<button class="ic ${cls || ''}" data-tip="${tip}" aria-label="${tip.replace(/<[^>]+>/g, '')}"><img alt="" src="${pxIcon(key)}">${num !== '' && num != null ? `<b>${num}</b>` : ''}</button>`; }
+function intentHtml(e) {
+  const m = e.intent, o = [];
+  if (e.st.starre) return ic('starre', 'Zz', '<b>Erstarrt</b><br>Setzt diese Runde aus.', 'cold');
+  if (m.fracture) o.push(ic('frac', '', '<b>Fraktur</b><br>Zwingt deine Realität zu brechen.', 'warn'));
+  if (m.atk) { const a = atkVal(e, m), k = a >= 15 ? 'jaw' : a >= 9 ? 'sword' : 'dagger'; o.push(ic(k, m.n > 1 ? `${a}×${m.n}` : a, `<b>Angriff</b><br>${a} Schaden${m.n > 1 ? `, ${m.n}-mal` : ''}.`, 'atk')); }
+  if (m.blk) o.push(ic('shield', m.blk, `<b>Block</b><br>Erhält ${m.blk} Block.`, 'blk'));
+  if (m.inst) o.push(ic('spiral', '+' + m.inst, `<b>Verwirrung</b><br>+${m.inst} Instabilität für dich.`));
+  if (m.infect) o.push(ic('infect', m.infect, `<b>Infektion</b><br>Infiziert ${m.infect} deiner Karten.`));
+  if (m.riss) o.push(ic('riss', m.riss, `<b>Riss</b><br>Mischt ${m.riss} Riss-Karte${m.riss > 1 ? 'n' : ''} in dein Deck.`));
+  if (m.heal) o.push(ic('heal', m.heal, `<b>Heilung</b><br>Heilt sich um ${m.heal}.`));
+  if (m.krank && !e.sick) o.push(ic('skull', '', '<b>Ansteckung</b><br>Gibt dir eine Krankheit.', 'warn'));
+  if (m.drain) o.push(ic('drain', '−' + m.drain, `<b>Energieraub</b><br>Nächster Zug: −${m.drain} Energie.`));
+  if (m.less) o.push(ic('less', '−' + m.less, `<b>Gedankenraub</b><br>Nächster Zug: ${m.less} Karte weniger.`));
+  if (m.mut) o.push(ic('mut', m.mut, `<b>Entstellung</b><br>${m.mut} deiner Karten mutieren katastrophal.`, 'warn'));
+  if (m.rage) o.push(ic('rage', '+' + m.rage, `<b>Raserei</b><br>Alle Angriffe dauerhaft +${m.rage}.`));
+  if (m.st) for (const k in m.st) o.push(ic(k, m.st[k], `<b>${STAT[k].n} ${m.st[k]}</b><br>${STAT[k].d}`));
+  return o.join('');
+}
 function renderAll() {
   if (!cb) return; const e = cb.enemy, sc = $('#s-combat'); topBar('#cBar');
   $('#eName').textContent = e.n; $('#eHp').style.width = clamp(e.hp / e.max * 100, 0, 100) + '%'; $('#eHpT').textContent = `${Math.max(0, e.hp)} / ${e.max}`;
   $('#eStat').innerHTML = (e.tr ? `<button class="chip tr" data-tr="${e.tr}">✦ ${TRAITS[e.tr].n}${e.tr === 'mask' ? ': immun ' + WLN[e.immune] : ''}${e.tr === 'revive' && e.revived ? ' (verbraucht)' : ''}</button>` : '') + (e.block ? `<span class="chip" style="color:${COL.C}">Block ${e.block}</span>` : '') + (e.befall ? `<span class="chip" style="color:${COL.G}">Befall ${e.befall}</span>` : '') + (e.thorns ? `<span class="chip" style="color:${COL.M}">Dornen ${e.thorns}</span>` : '') + stChips(e.st) + (e.weak ? `<span class="chip">Schwäche ${e.weak}</span>` : '') + (e.vuln ? `<span class="chip">Verwundbar ${e.vuln}</span>` : '');
-  $('#intent').innerHTML = cb.over ? '' : '<em>Als Nächstes</em>' + intentHtml(e);
+  $('#intent').innerHTML = cb.over ? '' : intentHtml(e);
   const st = cb.frac ? (cb.frac.perm ? 'Dauerbruch · Spiegelbild aktiv' : `Fraktur · noch ${cb.frac.turns} ${cb.frac.turns === 1 ? 'Zug' : 'Züge'}`) : cb.inst >= 70 ? 'Kritisch · +50 % Schaden, +25 % erlitten' : cb.inst >= 40 ? 'Erregt · +25 % Schaden' : 'Ruhig';
   $('#instL').innerHTML = `Instabilität <b>${cb.inst}</b>`; $('#instS').textContent = st; $('#instS').style.color = cb.frac ? '#fff' : cb.inst >= 70 ? COL.V : cb.inst >= 40 ? COL.Y : COL.W; $('#instFill').style.width = cb.inst + '%';
   sc.classList.toggle('crit', cb.inst >= 70); sc.classList.toggle('fractured', !!cb.frac); GFX.setInst(cb.inst / 100);
@@ -1922,7 +1986,7 @@ window.addEventListener('DOMContentLoaded', () => {
   on('#btnCont', () => { run = meta.run; run.dis = run.dis || []; run.asc = run.asc || 0; uidN = Math.max(...run.deck.map(c => c.uid)) + 1; showMap(); });
   on('#btnHub', () => { Sfx.play('click'); hub(); }); on('#btnKodex', kodex); on('#btnBack', title); on('#btnEnd', endTurn); on('#btnPlay', playSelected); on('#btnBackCard', deselect);
   const stInfo = e => { const t = e.target.closest('[data-tr]'), s2 = e.target.closest('[data-st]'); if (t) toast(`<b>${TRAITS[t.dataset.tr].n}</b><br>${TRAITS[t.dataset.tr].d}`, 3600); if (s2) toast(`<b>${STAT[s2.dataset.st].n}</b><br>${STAT[s2.dataset.st].d}`, 3600); };
-  $('#eStat').addEventListener('click', stInfo); $('#pSt').addEventListener('click', stInfo);
+  $('#eStat').addEventListener('click', stInfo); $('#intent').addEventListener('click', e => { const b = e.target.closest('[data-tip]'); if (b) toast(b.dataset.tip, 3200); }); $('#pSt').addEventListener('click', stInfo);
   $('#focus').addEventListener('click', e => { if (e.target.id === 'focus') deselect(); });
   $('#instWrap').onclick = () => toast('Instabilität: ab 40 +25 % Schaden, ab 70 +50 % (du erleidest +25 %) und wilde Mutationen, bei 100 Fraktur.', 3400);
   window.addEventListener('keydown', e => { if (!cb || $('#modal').classList.contains('on')) return; if (e.key === 'Escape') deselect(); else if (e.key === 'Enter' && selUid) playSelected(); else if (e.key.toLowerCase() === 'e' && !selUid) endTurn(); else if (/^[1-9]$/.test(e.key) && cb.hand[+e.key - 1]) select(cb.hand[+e.key - 1]); });
