@@ -240,6 +240,14 @@ body.evofocus #ind,body.evofocus #dmg,body.evofocus #tipBox,body.evofocus #toast
 @media (max-width:520px){.talb{grid-template-columns:1fr}}
 
 /* ===== VOXEL UI ===== */
+.sl.comp.fuse{width:auto;padding:0 3px;background:linear-gradient(90deg,#ffe6a8,#e9ffd9);box-shadow:0 2px 0 var(--ink),0 0 0 2px #ffd23f}
+#essBox{width:min(560px,94vw);margin:0 auto 10px;background:rgba(255,246,224,.94);border:3px solid var(--ink);border-radius:12px;padding:7px 10px;box-shadow:0 4px 0 var(--ink);font:800 12px Nunito;color:#4a2f18;text-align:center}
+#essBox .essT{font:400 15px 'Lilita One'}
+#essBox .essBar{display:flex;height:14px;border:2px solid var(--ink);border-radius:8px;overflow:hidden;margin:4px 0;background:#e6d2ac}
+#essBox .essBar i{display:block;height:100%}
+#essBox .essL{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+#essBox .essH{font-size:10.5px;opacity:.75;margin-top:3px}
+.essC{font:900 12px Nunito;color:#6b4a2a;margin:2px 0}
 .caff{margin-top:5px;padding:3px 7px;border-radius:8px;background:#e3f7cf;border:2px solid #7ec45a;font:900 12px Nunito;color:#2f6a1f;display:inline-block}.caff.off{background:#f3e6cc;border-color:#c9a46b;color:#8a6a45}.caff .vi{width:1.35em;height:1.35em}
 .vi{display:inline-block;width:1.25em;height:1.25em;vertical-align:-.3em;background-repeat:no-repeat;flex:0 0 auto}
 .dim{background-color:rgba(12,28,20,.72);background-image:linear-gradient(rgba(255,255,255,.035) 2px,transparent 2px),linear-gradient(90deg,rgba(255,255,255,.035) 2px,transparent 2px);background-size:28px 28px}
@@ -604,28 +612,28 @@ const PASSIVES=[
   {key:'hp',name:'Panzer-Blatt',icon:'🛡️',desc:m=>`+${Math.round(20*m)} Max-HP & heilt`,apply:(s,m)=>{s.maxHp+=Math.round(20*m);P.hp=Math.min(s.maxHp,P.hp+20*m);}},
   {key:'magnet',name:'Magnet-Hose',icon:'🧲',desc:m=>`+${pct(0.25*m)} Sammelradius`,apply:(s,m)=>s.magnet*=1+0.25*m},
   {key:'haste',name:'Schnellfeuer-Chip',icon:'⏩',desc:m=>`+${pct(0.1*m)} Angriffstempo (alle Waffen)`,apply:(s,m)=>s.haste*=1+0.1*m},
-  {key:'multi',name:'Doppel-Lauf',icon:'🔱',desc:m=>`+${m>=4.5?3:m>=2.3?2:1} Geschoss`,apply:(s,m)=>s.multishot=Math.min(9,s.multishot+(m>=4.5?3:m>=2.3?2:1)),max:5},
-  {key:'pierce',name:'Spitz-Geschoss',icon:'📌',desc:m=>`Geschosse durchbohren +${m>=2.3?2:1} Gegner`,apply:(s,m)=>s.pierce+=(m>=2.3?2:1),max:5},
-  {key:'bounce',name:'Gummi-Herz',icon:'💗',desc:m=>`Geschosse prallen +${m>=3.2?2:1}× ab`,apply:(s,m)=>s.bounce+=(m>=3.2?2:1),max:4},
+  {key:'multi',name:'Doppel-Lauf',icon:'🔱',desc:m=>`+${m>=4.5?3:m>=2.3?2:1} Geschoss`,apply:(s,m)=>s.multishot=Math.min(9,s.multishot+(m>=4.5?3:m>=2.3?2:1)),max:10},
+  {key:'pierce',name:'Spitz-Geschoss',icon:'📌',desc:m=>`Geschosse durchbohren +${m>=2.3?2:1} Gegner`,apply:(s,m)=>s.pierce+=(m>=2.3?2:1),max:10},
+  {key:'bounce',name:'Gummi-Herz',icon:'💗',desc:m=>`Geschosse prallen +${m>=3.2?2:1}× ab`,apply:(s,m)=>s.bounce+=(m>=3.2?2:1),max:8},
   {key:'dmg',name:'Wut-Kern',icon:'😤',desc:m=>`+${pct(0.1*m)} Schaden`,apply:(s,m)=>s.dmgMul*=1+0.1*m},
-  {key:'crit',name:'Glücks-Schraube',icon:'🔩',desc:m=>`+${pct(0.06*m)} Krit-Chance`,apply:(s,m)=>s.crit+=0.06*m,max:8},
+  {key:'crit',name:'Glücks-Schraube',icon:'🔩',desc:m=>`+${pct(0.06*m)} Krit-Chance`,apply:(s,m)=>s.crit+=0.06*m,max:16},
   {key:'critd',name:'Bonk-Brille',icon:'🕶️',desc:m=>`+${pct(0.25*m)} Krit-Schaden`,apply:(s,m)=>s.critMul+=0.25*m},
-  {key:'armor',name:'Rinden-Haut',icon:'🪵',desc:m=>`−${f1(1.5*m)} Schaden pro Treffer`,apply:(s,m)=>s.armor+=1.5*m,max:6},
+  {key:'armor',name:'Rinden-Haut',icon:'🪵',desc:m=>`−${f1(1.5*m)} Schaden pro Treffer`,apply:(s,m)=>s.armor+=1.5*m,max:12},
   {key:'regen',name:'Heil-Moos',icon:'🌿',desc:m=>`+${f1(0.5*m)} HP pro Sekunde`,apply:(s,m)=>s.regen+=0.5*m},
-  {key:'big',name:'Riesen-Geschoss',icon:'🎈',desc:m=>`+${pct(0.2*m)} Geschossgröße · +${pct(0.06*m)} Schaden`,apply:(s,m)=>{s.projSize*=1+0.2*m;s.dmgMul*=1+0.06*m;},max:5},
-  {key:'area',name:'Riesenpilz',icon:'🍄',desc:m=>`+${pct(0.1*m)} Wirkungsbereich (Explosionen, Auren, Klingen)`,apply:(s,m)=>s.area*=1+0.1*m,max:6},
-  {key:'dur',name:'Zeitkristall',icon:'💎',desc:m=>`+${pct(0.12*m)} Effektdauer (Pfützen, Tornados, Einfrieren)`,apply:(s,m)=>s.dur*=1+0.12*m,max:5},
-  {key:'chain',name:'Kettenreaktion',icon:'💥',desc:m=>`${pct(0.07*m)} Chance: Besiegte Gegner explodieren`,apply:(s,m)=>s.chain+=0.07*m,max:5},
-  {key:'adren',name:'Adrenalin',icon:'💢',desc:m=>`Bis zu +${pct(0.25*m)} Schaden bei wenig HP`,apply:(s,m)=>s.adren+=0.25*m,max:4},
-  {key:'shield',name:'Blätterschild',icon:'🍃',desc:m=>`Blockt alle ${f1(Math.max(4,14-2*m))}s einen Treffer`,apply:(s,m)=>{s.shieldCd=Math.min(s.shieldCd,Math.max(4,14-2*m));},max:3},
-  {key:'knock',name:'Bonk-Handschuh',icon:'🥊',desc:m=>`+${pct(0.3*m)} Rückstoß · +${pct(0.05*m)} Schaden`,apply:(s,m)=>{s.knock*=1+0.3*m;s.dmgMul*=1+0.05*m;},max:4},
+  {key:'big',name:'Riesen-Geschoss',icon:'🎈',desc:m=>`+${pct(0.2*m)} Geschossgröße · +${pct(0.06*m)} Schaden`,apply:(s,m)=>{s.projSize*=1+0.2*m;s.dmgMul*=1+0.06*m;},max:10},
+  {key:'area',name:'Riesenpilz',icon:'🍄',desc:m=>`+${pct(0.1*m)} Wirkungsbereich (Explosionen, Auren, Klingen)`,apply:(s,m)=>s.area*=1+0.1*m,max:12},
+  {key:'dur',name:'Zeitkristall',icon:'💎',desc:m=>`+${pct(0.12*m)} Effektdauer (Pfützen, Tornados, Einfrieren)`,apply:(s,m)=>s.dur*=1+0.12*m,max:10},
+  {key:'chain',name:'Kettenreaktion',icon:'💥',desc:m=>`${pct(0.07*m)} Chance: Besiegte Gegner explodieren`,apply:(s,m)=>s.chain+=0.07*m,max:10},
+  {key:'adren',name:'Adrenalin',icon:'💢',desc:m=>`Bis zu +${pct(0.25*m)} Schaden bei wenig HP`,apply:(s,m)=>s.adren+=0.25*m,max:8},
+  {key:'shield',name:'Blätterschild',icon:'🍃',desc:m=>`Blockt alle ${f1(Math.max(4,14-2*m))}s einen Treffer`,apply:(s,m)=>{s.shieldCd=Math.min(s.shieldCd,Math.max(4,14-2*m));},max:6},
+  {key:'knock',name:'Bonk-Handschuh',icon:'🥊',desc:m=>`+${pct(0.3*m)} Rückstoß · +${pct(0.05*m)} Schaden`,apply:(s,m)=>{s.knock*=1+0.3*m;s.dmgMul*=1+0.05*m;},max:8},
   {key:'xp',name:'XP-Brille',icon:'🤓',desc:m=>`+${pct(0.12*m)} Erfahrung`,apply:(s,m)=>s.xpMul*=1+0.12*m},
-  {key:'vamp',name:'Vampir-Zahn',icon:'🦷',desc:m=>`${pct(0.06*m)} Chance: +2 HP pro Kill`,apply:(s,m)=>s.vamp+=0.06*m,max:5},
+  {key:'vamp',name:'Vampir-Zahn',icon:'🦷',desc:m=>`${pct(0.06*m)} Chance: +2 HP pro Kill`,apply:(s,m)=>s.vamp+=0.06*m,max:10},
   {key:'luck',name:'Glücksklee',icon:'🍀',desc:m=>`+${pct(0.1*m)} Glück (bessere Seltenheiten)`,apply:(s,m)=>s.luck+=0.1*m},
   {key:'thorns',name:'Stachel-Panzer',icon:'🌵',desc:m=>`Wer dich trifft, bekommt ${Math.round(20*m)} Schaden`,apply:(s,m)=>s.thorns+=20*m},
-  {key:'coin',name:'Schatzsucher',icon:'💰',desc:m=>`+${pct(0.3*m)} Münz-Drops`,apply:(s,m)=>s.coinMul+=0.3*m,max:4},
+  {key:'coin',name:'Schatzsucher',icon:'💰',desc:m=>`+${pct(0.3*m)} Münz-Drops`,apply:(s,m)=>s.coinMul+=0.3*m,max:8},
   {key:'split',name:'Glitzer-Rübe',icon:'🥕',desc:()=>`Jeder Treffer spaltet sich in 2 Mini-Geschosse`,apply:s=>s.split=true,unique:true},
-  {key:'glass',name:'Glas-Kanone',icon:'🔮',desc:m=>`+${pct(0.3*m)} Schaden, aber −20 Max-HP`,apply:(s,m)=>{s.dmgMul*=1+0.3*m;s.maxHp=Math.max(30,s.maxHp-20);P.hp=Math.min(P.hp,s.maxHp);},max:3},
+  {key:'glass',name:'Glas-Kanone',icon:'🔮',desc:m=>`+${pct(0.3*m)} Schaden, aber −20 Max-HP`,apply:(s,m)=>{s.dmgMul*=1+0.3*m;s.maxHp=Math.max(30,s.maxHp-20);P.hp=Math.min(P.hp,s.maxHp);},max:6},
 ];
 const CURSES=[
   {t:'Max-HP −15%',f:s=>{s.maxHp=Math.max(30,Math.round(s.maxHp*0.85));P.hp=Math.min(P.hp,s.maxHp);}},
@@ -1391,7 +1399,7 @@ const WF={
     volley(ox,oz,0.72*stats.size,t,n,o); mirrorFire(o,1); P.recoil=1; sfx('shoot'); glow(ox,0.72,oz,'#ffe14d',0.5,0.1,1); }},
   charge:{cd:l=>Math.max(1.3,5.2-l*0.5),fire(w){ const t=P.target; if(!t) return false; const o={dmg:(35+w.lvl*15)*w.mul,speed:20,pierce:999,bounce:0,r:0.6*stats.projSize,s:3*stats.projSize,life:1.7,kb:12,col:COL.charge,kind:'charge'};
     volley(P.x,P.z,1,t,1,o); mirrorFire(o); sfx('charge'); addShake(0.15); glow(P.x,1,P.z,'#6ef6ff',1,0.25,4); }},
-  saws:{update(w,dt){ const n=Math.min(16,Math.min(8,w.lvl+1)+(stats.multishot-1)); const R=(2.6+w.lvl*0.15)*AREA(); P.sawA+=dt*(3+w.lvl*0.25); const dmg=(7+w.lvl*4)*w.mul; w.pos=w.pos||[]; w.pos.length=0;
+  saws:{update(w,dt){ const n=Math.min(16,Math.min(14,w.lvl+1)+(stats.multishot-1)); const R=(2.6+w.lvl*0.15)*AREA(); P.sawA+=dt*(3+w.lvl*0.25); const dmg=(7+w.lvl*4)*w.mul; w.pos=w.pos||[]; w.pos.length=0;
     for(let i=0;i<n;i++){ const a=P.sawA+i/n*TAU; const sx=P.x+Math.cos(a)*R, sz=P.z+Math.sin(a)*R; w.pos.push([sx,sz]);
       forNear(sx,sz,0.8,e=>{ if(e.sawCd>0) return; if(Math.hypot(e.x-sx,e.z-sz)<e.r+0.6){ const ex=e.x-P.x,ez=e.z-P.z,ed=Math.hypot(ex,ez)||1; hitEnemy(e,dmg,ex/ed*6,ez/ed*6); e.sawCd=0.3; burst(sx,0.8,sz,'#ffffff',3,5,0.1,0.2); glow(sx,0.8,sz,'#ffd23f',0.4,0.12,1.4);} }); } }},
   bonk:{cd:l=>Math.max(1.1,3.4-l*0.3),fire(w){ if(!nearestEnemy(P.x,P.z,6)) return false; const R=(3.8+w.lvl*0.45)*AREA(); const dmg=(18+w.lvl*10)*w.mul;
@@ -1727,11 +1735,11 @@ const ELEM={fire:{name:'Feuer',icon:'🔥',col:'#ff6a1a'},frost:{name:'Frost',ic
 const W_EL={spit:['light'],charge:['light','shock'],saws:['force'],bonk:['force'],zap:['shock'],bombs:['fire','force'],boomer:['nature'],flame:['fire'],meteor:['fire','force'],frost:['frost'],poison:['poison'],laser:['shock','light'],missile:['nature','shock'],tornado:['nature','frost']};
 const A_EL={fire:['fire'],frost:['frost'],storm:['shock'],grav:['shadow'],holy:['light'],midas:['light'],chrono:['shadow','frost'],mirror:['light','shadow'],blood:['shadow','poison'],chaos:['chaos']};
 const C_EL={funki:['shock'],mampfi:['nature'],glitzi:['light'],bummi:['fire']};
-const P_EL={speed:'shock',hp:'force',magnet:'shadow',haste:'shock',multi:'light',pierce:'light',bounce:'shock',dmg:'fire',crit:'shadow',critd:'shadow',armor:'force',regen:'nature',big:'force',area:'nature',dur:'frost',chain:'fire',adren:'fire',shield:'nature',knock:'force',xp:'light',vamp:'shadow',luck:'light',thorns:'nature',coin:'light',split:'light',glass:'shadow'};
+const P_EL={speed:'shock',hp:'force',magnet:'shadow',haste:'shock',multi:'light',pierce:'frost',bounce:'shock',dmg:'fire',crit:'shadow',critd:'shadow',armor:'force',regen:'nature',big:'force',area:'nature',dur:'frost',chain:'fire',adren:'fire',shield:'nature',knock:'force',xp:'light',vamp:'poison',luck:'light',thorns:'poison',coin:'light',split:'poison',glass:'shadow'};
 const BIOME_EL={jungle:'nature',desert:'force',frost:'frost',volcano:'fire',chaos:null,reef:'frost',shroom:'poison',sky:'shock',scrap:'force'};
 const ess={}; let curEl=null;
 function tagsOf(c){ if(c.kind==='w') return W_EL[c.key]||[]; if(c.kind==='a') return A_EL[c.key]||[]; if(c.kind==='c') return C_EL[c.key]||[]; const t=P_EL[c.key]; return t?[t]:[]; }
-function addEssence(tags,m){ if(!tags.length) return; for(let t of tags){ if(t==='chaos') t=pick(ELS); ess[t]=(ess[t]||0)+10*m/tags.length; } refreshSlots(); }
+function addEssence(tags,m,w=1){ if(!tags.length) return; for(let t of tags){ if(t==='chaos') t=pick(ELS); ess[t]=(ess[t]||0)+10*m*w/tags.length; } refreshSlots(); }
 function topEls(){ return ELS.filter(e=>(ess[e]||0)>0).sort((a,b)=>ess[b]-ess[a]); }
 const elOf=k=>{ const t=W_EL[k]; return t?t[(Math.random()*t.length)|0]:null; };
 
@@ -1822,7 +1830,7 @@ function resetEvo(){ for(const k of ELS) ess[k]=0; Object.assign(EV,{stage:1,el1
 let runAff=null;
 function evoForm(stage,el1,el2){ if(stage===2) return EVO_PRE[el1]+'-'+curChar.name; if(el2) return RX[rk(el1,el2)].n+'-'+curChar.name; return EVO_S3[el1]+'-'+curChar.name; }
 function buildEvoOpts(){
-  const top=topEls(); if(!top.length) top.push(runAff||'light'); const opts=[];
+  const top=topEls(); for(const e of [curChar.el,runAff,...ELS.slice().sort((a,b)=>(ess[b]||0)-(ess[a]||0))]) if(e&&!top.includes(e)&&top.length<4) top.push(e); const opts=[];
   if(EV.stage===1 && level<25){ top.slice(0,3).forEach(e=>opts.push({stage:2,el1:e})); opts.push({small:1}); }
   else if(EV.stage===1){ opts.push({stage:3,el1:top[0]}); if(top[1]) opts.push({stage:3,el1:top[0],el2:top[1]}); if(top[2]) opts.push({stage:3,el1:top[1]||top[0],el2:top[2]}); opts.push({small:2}); }
   else { const others=top.filter(e=>e!==EV.el1); opts.push({stage:3,el1:EV.el1}); if(others[0]) opts.push({stage:3,el1:EV.el1,el2:others[0]}); if(others[1]) opts.push({stage:3,el1:EV.el1,el2:others[1]}); if(opts.length<3){ const r=ELS.filter(e=>e!==EV.el1&&!others.includes(e)); opts.push({stage:3,el1:EV.el1,el2:pick(r)}); } opts.push({small:3}); }
@@ -2092,6 +2100,7 @@ function addGeneParts(R,inner,genes,ev){ const tint=ev&&ev.el1?ELEM[ev.el1].col:
   }
 }
 function rebuildPM(){ if(PM){ scene.remove(PM.g); } const gs=Object.keys(GN); PM=buildMonster(curChar.look,EV.stage>=2?{stage:EV.stage,el1:EV.el1,el2:EV.el2}:null,gs); scene.add(PM.g); clearShadowClone(); }
+const MAXL=20;
 // ================= AURA FX =================
 const AURA_MODE={fire:0,frost:1,storm:2,grav:3,holy:4,midas:5,chrono:6,mirror:7,blood:8,chaos:9};
 const AURA_FRAG=`
@@ -2234,7 +2243,7 @@ function visuals(dt,rt){
     if(e.innate||e.els){ let n=0; const hy=(e.def.fly?2.9:1.5*(e.sc||1)+0.3); if(e.innate){ _c2.set(ELEM[e.innate].col); glowPool.bill(e.x,0.15,e.z,e.r*2.6,_c2.multiplyScalar(0.35)); } for(const k in e.els){ if(e.els[k]>T&&n<3){ _c2.set(ELEM[k].col); glowPool.bill(e.x+(n-0.5)*0.35,hy+Math.sin(rt*6+n)*0.06,e.z,0.55,_c2); n++; } } }
     if(frz && Math.random()<0.02*Q()) glow(e.x,1,e.z,'#bff0ff',0.4,0.3,0.1); }
   if(boss&&boss.alive) shadowPool.add(boss.x,0.03,boss.z,3.2*boss.sc*Math.max(0.4,1-boss.y*0.07),1,3.2*boss.sc*Math.max(0.4,1-boss.y*0.07),0,0,0,WHITE);
-  for(const c of comps){ if(c.key==='bummi'&&c.respawn>0) continue; c.g.position.set(c.x,c.y,c.z); c.g.rotation.y=c.ry; c.g.scale.setScalar(1+c.lvl*0.04); shadowPool.add(c.x,0.03,c.z,0.5,1,0.5,0,0,0,WHITE); }
+  for(const c of comps){ if(c.key==='bummi'&&c.respawn>0) continue; c.g.position.set(c.x,c.y,c.z); c.g.rotation.y=c.ry; c.g.scale.setScalar((1+c.lvl*0.04)*(c.fz||1)); if(c.rider) continue; shadowPool.add(c.x,0.03,c.z,0.5,1,0.5,0,0,0,WHITE); }
   for(const a of allies){ if(a.type==='slime'){ ePools.slime.add(a.x,Math.abs(Math.sin(rt*8+a.t))*0.3,a.z,0.6,0.6,0.6,0,rt*2,0,_c.setRGB(0.6,2.2,0.7)); glowPool.bill(a.x,0.3,a.z,1.4,_c.setRGB(0.3,0.9,0.3)); } }
   drawDead(rt);
   for(const k in ePools) ePools[k].end();
@@ -2326,7 +2335,7 @@ function updateHUD(){
 }
 function refreshSlots(){
   let h=''; for(const k in W) h+=`<div class="sl">${WEAPONS[k].icon}<b>${W[k].lvl}</b></div>`;
-  for(const c of comps) h+=`<div class="sl comp">${COMPS[c.key].icon}<b>${c.lvl}</b></div>`;
+  for(const c of comps){ if(c.rider) continue; h+=c.fusedWith?`<div class="sl comp fuse" title="${c.fname}">${COMPS[c.key].icon}${COMPS[c.fusedWith.key].icon}<b>${Math.max(c.lvl,c.fusedWith.lvl)}</b></div>`:`<div class="sl comp">${COMPS[c.key].icon}<b>${c.lvl}</b></div>`; }
   let a=''; for(const k in AU) a+=`<div class="sl aura" style="--ac:${AURAS[k].col}">${AURAS[k].icon}</div>`;
   let g=''; for(const k in GN) g+=`<div class="sl gene" title="${GENES[k].name}">${GENES[k].icon}${(GN[k].lv||1)>1?`<b>${GN[k].lv}</b>`:''}</div>`;
   let el=''; if(EV.stage>=2) el+=`<span class="evob" style="--e1:${ELEM[EV.el1].col};--e2:${ELEM[EV.el2||EV.el1].col}">${EV.name}</span>`; else if(EV.small) el+=`<span class="evob" style="--e1:#c9a46b;--e2:#8a6a45">🥚 Klein</span>`;
@@ -2340,18 +2349,18 @@ let choices=[], curChest=false;
 function rollRarity(minR=0){ const L=stats.luck+T/900; const ws=RAR.map((r,i)=>i<minR?0:r.w*Math.pow(1+L,i)*(i===4?stats.chaosBoost:1)); const tot=ws.reduce((a,b)=>a+b,0); let x=Math.random()*tot; for(let i=0;i<ws.length;i++){ x-=ws[i]; if(x<=0) return i; } return minR; }
 function buildChoices(n,minR){
   const ownedW=Object.keys(W).length, ownedA=Object.keys(AU).length; const cands=[];
-  for(const k in WEAPONS){ const w=W[k]; if(w&&w.lvl>=8) continue; if(!w&&ownedW>=maxW()) continue; cands.push({kind:'w',key:k,w:w?1.5:1.0}); }
+  for(const k in WEAPONS){ const w=W[k]; if(w&&w.lvl>=MAXL) continue; if(!w&&ownedW>=maxW()) continue; cands.push({kind:'w',key:k,w:w?1.5:1.0}); }
   for(const k in AURAS){ const a=AU[k]; if(!a&&ownedA>=maxA()) continue; if(a&&a.lv>=6) continue; cands.push({kind:'a',key:k,w:a?0.8:0.55}); }
-  for(const k in COMPS){ const c=comps.find(q=>q.key===k); if(c&&c.lvl>=8) continue; if(!c&&comps.length>=3) continue; cands.push({kind:'c',key:k,w:c?0.9:0.55}); }
+  for(const k in COMPS){ const c=comps.find(q=>q.key===k); if(c&&c.lvl>=MAXL) continue; if(!c&&comps.filter(q=>!q.rider).length>=3) continue; cands.push({kind:'c',key:k,w:c?0.9:0.55}); }
   for(const p of PASSIVES){ const c=have[p.key]||0; if(p.unique&&c) continue; if(p.max&&c>=p.max) continue; cands.push({kind:'p',key:p.key,p,w:p.unique?0.4:1}); }
   const out=[]; while(out.length<n&&cands.length){ const tot=cands.reduce((a,c)=>a+c.w,0); let x=Math.random()*tot; let idx=0; for(;idx<cands.length;idx++){ x-=cands[idx].w; if(x<=0) break; } idx=Math.min(idx,cands.length-1); const c=cands.splice(idx,1)[0]; c.r=rollRarity(minR); out.push(c); }
   return out;
 }
 function cardInfo(c){
   const r=RAR[c.r];
-  if(c.kind==='w'){ const def=WEAPONS[c.key], l=W[c.key]?W[c.key].lvl:0, nl=Math.min(8,l+r.gain); return {icon:def.icon,name:def.name,kind:'Waffe',lvl:l===0?`NEU! → Stufe ${nl}`:`Stufe ${l} → ${nl}${r.wm?` · +${pct(r.wm)} Kraft`:''}`,desc:def.desc(nl)}; }
+  if(c.kind==='w'){ const def=WEAPONS[c.key], l=W[c.key]?W[c.key].lvl:0, nl=Math.min(MAXL,l+r.gain); return {icon:def.icon,name:def.name,kind:'Waffe',lvl:l===0?`NEU! → Stufe ${nl}`:`Stufe ${l} → ${nl}${r.wm?` · +${pct(r.wm)} Kraft`:''}`,desc:def.desc(nl)}; }
   if(c.kind==='a'){ const def=AURAS[c.key], a=AU[c.key]; const np=(a?a.pow:0)+r.m; return {icon:def.icon,name:def.name,kind:'Aura',lvl:a?`Stärke ${a.pow.toFixed(1)} → ${np.toFixed(1)}`:`NEU! · Stärke ${np.toFixed(1)}`,desc:def.desc(np)}; }
-  if(c.kind==='c'){ const def=COMPS[c.key], cc=comps.find(q=>q.key===c.key), l=cc?cc.lvl:0, nl=Math.min(8,l+r.gain); return {icon:def.icon,name:def.name,kind:'Begleiter',lvl:l===0?`NEU! → Stufe ${nl}`:`Stufe ${l} → ${nl}`,desc:def.desc(nl)}; }
+  if(c.kind==='c'){ const def=COMPS[c.key], cc=comps.find(q=>q.key===c.key), l=cc?cc.lvl:0, nl=Math.min(MAXL,l+r.gain); return {icon:def.icon,name:def.name,kind:'Begleiter',lvl:l===0?`NEU! → Stufe ${nl}`:`Stufe ${l} → ${nl}`,desc:def.desc(nl)}; }
   const cnt=have[c.key]||0; return {icon:c.p.icon,name:c.p.name,kind:'Item',lvl:cnt?`Bereits ${cnt}×`:'NEU!',desc:c.p.desc(r.m)};
 }
 function openLevelUp(isChest){
@@ -2370,11 +2379,11 @@ function renderCards(){
 }
 function pickCard(i){
   const c=choices[i]; if(!c||state!=='levelup') return; const r=RAR[c.r];
-  if(c.kind==='w'){ let w=W[c.key]; if(!w) w=W[c.key]={lvl:0,mul:1,t:0.3}; w.lvl=Math.min(8,w.lvl+r.gain); w.mul*=1+r.wm; }
+  if(c.kind==='w'){ let w=W[c.key]; if(!w) w=W[c.key]={lvl:0,mul:1,t:0.3}; w.lvl=Math.min(MAXL,w.lvl+r.gain); w.mul*=1+r.wm; }
   else if(c.kind==='a'){ let a=AU[c.key]; if(!a) a=AU[c.key]={pow:0,tk:1,lv:0}; a.pow+=r.m; a.lv++; }
-  else if(c.kind==='c'){ let cc=comps.find(q=>q.key===c.key); if(!cc) cc=addCompanion(c.key,0); cc.lvl=Math.min(8,cc.lvl+r.gain); cc.mul*=1+r.wm; }
+  else if(c.kind==='c'){ let cc=comps.find(q=>q.key===c.key); if(!cc) cc=addCompanion(c.key,0); cc.lvl=Math.min(MAXL,cc.lvl+r.gain); cc.mul*=1+r.wm; }
   else { c.p.apply(stats,r.m); have[c.key]=(have[c.key]||0)+1; if(c.key==='shield'&&!P.shield) P.shieldT=0.1; }
-  addEssence(tagsOf(c),r.m);
+  addEssence(tagsOf(c),r.m,c.kind==='p'?0.5:c.kind==='c'?0.8:1);
   const info=cardInfo(c); toast(`${info.icon} <b>${info.name}</b> · <span style="color:var(--rcd)" class="r-${r.id}">${r.name}</span>`);
   if(c.r===4){ chaosPicked++; const cu=pick(CURSES); cu.f(stats); setTimeout(()=>toast(`🌀 CHAOS-FLUCH: <b>${cu.t}</b>`,'#d61f45'),300); sfx('chaos'); }
   sfx('card'); closeLevel();
@@ -3025,7 +3034,7 @@ tierBox.addEventListener('click',e=>{ const b=e.target.closest('[data-mode]'); i
 { const rm=renderMenu; renderMenu=function(){ rm(); if(meta.mode!=='normal') $('chipBiomeN').textContent+=' · '+MODES[meta.mode].i; }; }
 // gene-set info in gene picker
 { const og=openGene; if(typeof og==='function') openGene=function(...a){ const r=og(...a); try{ const el=document.querySelector('#gene .subt'); if(el&&!document.getElementById('gsInfo')) el.insertAdjacentHTML('afterend',`<div id="gsInfo" style="font:800 11px Nunito;color:#fff;text-align:center;margin:4px 0">Gen-Sets: ${GENE_SETS.map(s=>s.i+' '+s.n).join(' · ')} – 2 oder 3 Gene derselben Familie geben Boni</div>`); }catch(_){} return r; }; }
-window.__mbx2={USES:()=>Object.fromEntries(Object.entries(USES).map(([k,v])=>[k,[...v].join(",")])),forceCards:(arr)=>{ choices=arr.map(([kind,key,r])=>kind==="p"?{kind,key,r,p:PASSIVES.find(q=>q.key===key)}:{kind,key,r}); renderCards(); },addXP:(v)=>{ xp+=v; },get xpI(){ return [xp,xpNeed,pendingLevels,lvCd]; },tele:(x,z,R,d,c)=>tele(x,z,R,d,c,()=>{}),addZone:(o)=>zones.push(o),addPuddle:(o)=>puddles.push(o),showTip:(t)=>showTip(t),toast:(t)=>toast(t),setWx:i=>{ weatherIdx=i; applyWeather(false); },setChar:id=>{ curChar=charById(id); setPlayerModel(curChar); },get rushN(){return X.rushN;},GENE_SETS,get gsLvl(){return gsLvl;},MODES,runEvent:(id)=>runEvent(id)};
+window.__mbx2={get choices(){ return choices; },fuse:()=>{ const c=fuseCandidates(); if(c.length) doFuse(c[0][0],c[0][1]); return c.length; },USES:()=>Object.fromEntries(Object.entries(USES).map(([k,v])=>[k,[...v].join(",")])),forceCards:(arr)=>{ choices=arr.map(([kind,key,r])=>kind==="p"?{kind,key,r,p:PASSIVES.find(q=>q.key===key)}:{kind,key,r}); renderCards(); },addXP:(v)=>{ xp+=v; },get xpI(){ return [xp,xpNeed,pendingLevels,lvCd]; },tele:(x,z,R,d,c)=>tele(x,z,R,d,c,()=>{}),addZone:(o)=>zones.push(o),addPuddle:(o)=>puddles.push(o),showTip:(t)=>showTip(t),toast:(t)=>toast(t),setWx:i=>{ weatherIdx=i; applyWeather(false); },setChar:id=>{ curChar=charById(id); setPlayerModel(curChar); },get rushN(){return X.rushN;},GENE_SETS,get gsLvl(){return gsLvl;},MODES,runEvent:(id)=>runEvent(id)};
 
 { const cf=clearField; clearField=function(){ cf(); tipQ.length=0; tipEl.classList.remove('on'); }; }
 let fxDim=1;
@@ -3681,6 +3690,49 @@ for(const k in ADD_TAGS){ const u=USES['w:'+k]; if(u) ADD_TAGS[k].split(',').for
 for(const k in AF){ const u=USES['a:'+k]; if(u) u.add('haste'); }
 // haste/dmg/crit are global already; make the "Wirkt auf" line include auras/companions for haste too
 { const ab=affectedBy; affectedBy=function(pk){ return ab(pk); }; }
+// =====================================================================
+// ============ ESSENCE: fairer sources + clearer evo screen ===========
+// =====================================================================
+// starting weapon counts
+{ const rr=resetRun; resetRun=function(){ rr(); for(const k in W) addEssence(W_EL[k]||[],1,1); for(const k in AU) addEssence(A_EL[k]||[],1,1); }; }
+// kills credit the element that finished the enemy, reactions credit both elements
+{ const ke=killEnemy; killEnemy=function(e){ const el=e.dk; ke(e); if(el&&ELS.includes(el)){ ess[el]=(ess[el]||0)+(e.boss?6:e.elite?0.8:0.06); } }; }
+{ const tr=triggerReaction; triggerReaction=function(e,a,b){ const r=tr(e,a,b); if(ELS.includes(a)) ess[a]=(ess[a]||0)+0.25; if(ELS.includes(b)) ess[b]=(ess[b]||0)+0.25; return r; }; }
+// genes: install credits the evolution element of the gene family
+const GENE_FAM_EL={bat:'shadow',eye:'light',ghost:'shadow',brute:'force',mole:'force',turret:'shock',spiky:'nature',slime:'poison',splitter:'poison',bomber:'fire',charger:'fire',shaman:'light'};
+{ const ig=installGene; installGene=function(k,m){ ig(k,m); const g=GENES[k]; const el=g&&GENE_FAM_EL[g.src]; if(el) addEssence([el],m||1,0.8); }; }
+// evo screen: essence overview + share on each card
+const essBox=document.createElement('div'); essBox.id='essBox'; $('evoCards').before(essBox);
+function essShare(){ const tot=ELS.reduce((s,e)=>s+(ess[e]||0),0)||1; return Object.fromEntries(ELS.map(e=>[e,(ess[e]||0)/tot])); }
+{ const oe=openEvo; openEvo=function(){ oe(); const sh=essShare(); const list=ELS.slice().sort((a,b)=>sh[b]-sh[a]);
+  essBox.innerHTML=`<div class="essT">Deine Essenzen</div><div class="essBar">${list.filter(e=>sh[e]>0.004).map(e=>`<i style="flex:${sh[e]};background:${ELEM[e].col}" title="${ELEM[e].name||e}"></i>`).join('')}</div><div class="essL">${list.filter(e=>sh[e]>0.004).slice(0,5).map(e=>`<span>${ELEM[e].icon} ${Math.round(sh[e]*100)}%</span>`).join('')}</div><div class="essH">Essenz bekommst du durch Karten (Waffen zählen am meisten), Gene, Kills und Reaktionen des jeweiligen Elements.</div>`;
+  document.querySelectorAll('#evoCards .card.evo').forEach((c,i)=>{ const o=evoOpts[i]; if(!o||o.small) return; const p=Math.round(sh[o.el1]*100)+(o.el2?Math.round(sh[o.el2]*100):0); c.querySelector('.cl')?.insertAdjacentHTML('beforebegin',`<div class="essC">Essenz ${o.el2?ELEM[o.el1].icon+ELEM[o.el2].icon:ELEM[o.el1].icon} ${p}%</div>`); }); }; }
+// =====================================================================
+// ============ COMPANION FUSION =======================================
+// =====================================================================
+function fuseName(a,b){ const A=COMPS[a].name, B=COMPS[b].name; const h1=A.slice(0,Math.ceil(A.length/2)), h2=B.slice(Math.floor(B.length/2)); return (h1+h2).replace(/(.)\1\1/g,'$1$1'); }
+const FUSE_TITLE={fire:'Glut',frost:'Frost',shock:'Donner',poison:'Gift',nature:'Wald',light:'Licht',force:'Fels',shadow:'Schatten'};
+function fuseCandidates(){ const free=comps.filter(c=>!c.fusedWith&&!c.rider&&c.lvl>=3); const out=[]; for(let i=0;i<free.length;i++) for(let j=i+1;j<free.length;j++) out.push([free[i],free[j]]); return out; }
+function doFuse(a,b){ if(a.fusedWith||b.rider) return; a.fusedWith=b; b.rider=a; a.mul*=1.5; b.mul*=1.5; a.fz=1.3; b.fz=0.75; a.fpulse=2; const ea=C_EL[a.key][0], eb=C_EL[b.key][0];
+  a.fname=(FUSE_TITLE[ea]||'')+'-'+fuseName(a.key,b.key); a.fel=[ea,eb];
+  banner('FUSION!',COMPS[a.key].icon+' + '+COMPS[b.key].icon+' → '+a.fname); sfx('win'); flashScreen(0.3); vib([40,40,120]);
+  for(let i=0;i<14;i++){ const g=i/14*TAU; glow(a.x,1,a.z,i%2?ELEM[ea].col:ELEM[eb].col,0.6,0.6,0.1,Math.cos(g)*7,2,Math.sin(g)*7); } ringFx(a.x,a.z,5,ELEM[ea].col,0.6); refreshSlots(); }
+// offer a fusion card now and then
+{ const bc=buildChoices; buildChoices=function(n,minR){ const out=bc(n,minR); const cs=fuseCandidates(); if(cs.length&&Math.random()<(minR>=2?0.6:0.35)&&out.length){ const [a,b]=pick(cs); const nm=(FUSE_TITLE[C_EL[a.key][0]]||'')+'-'+fuseName(a.key,b.key);
+    out[out.length-1]={kind:'p',key:'fuse',r:2,fa:a,fb:b,p:{icon:COMPS[a.key].icon+COMPS[b.key].icon,name:'Fusion: '+nm,desc:()=>`${COMPS[a.key].name} + ${COMPS[b.key].name} verschmelzen zu einem neuen Begleiter · beide Fähigkeiten · +50% Schaden · Element-Welle (${ELEM[C_EL[a.key][0]].icon}${ELEM[C_EL[b.key][0]].icon} löst Reaktionen aus)`,apply:()=>{}}}; }
+  return out; }; }
+{ const pc=pickCard; pickCard=function(i){ const c=choices[i]; const f=c&&c.key==='fuse'?[c.fa,c.fb]:null; pc(i); if(f) doFuse(f[0],f[1]); }; }
+// rider follows host, host emits element waves
+{ const uc=updateCompanions; updateCompanions=function(dt){ uc(dt);
+  for(const a of comps){ const b=a.fusedWith; if(!b) continue; const t=a.t;
+    b.x=a.x+Math.cos(t*2)*0.25; b.z=a.z+Math.sin(t*2)*0.25; b.y=a.y+0.95*(a.fz||1)+Math.sin(t*4)*0.12; b.ry=a.ry+Math.sin(t*1.5)*0.6;
+    if(Math.random()<dt*10*Q()) glow(a.x+rand(-0.4,0.4),a.y+rand(0.3,1.4),a.z+rand(-0.4,0.4),pick([ELEM[a.fel[0]].col,ELEM[a.fel[1]].col]),0.3,0.5,0.04,0,1.2,0);
+    a.fpulse-=dt*stats.haste; if(a.fpulse<=0){ a.fpulse=3.2; const R=3.4*AREA(), dmg=(10+Math.max(a.lvl,b.lvl)*5)*a.mul;
+      curEl=a.fel[0]; curWK=null; forNear(a.x,a.z,R,e=>{ if(Math.hypot(e.x-a.x,e.z-a.z)<R+e.r) hitEnemy(e,dmg*0.5,0,0,{el:a.fel[0]}); });
+      curEl=a.fel[1]; forNear(a.x,a.z,R,e=>{ if(Math.hypot(e.x-a.x,e.z-a.z)<R+e.r) hitEnemy(e,dmg*0.5,(e.x-a.x)*0.8,(e.z-a.z)*0.8,{el:a.fel[1]}); }); curEl=null;
+      ringFx(a.x,a.z,R,ELEM[a.fel[0]].col,0.45); ringFx(a.x,a.z,R*0.7,ELEM[a.fel[1]].col,0.4); glow(a.x,1,a.z,ELEM[a.fel[1]].col,1.4,0.25,3); } } }; }
+
+{ const ci=cardInfo; cardInfo=function(c){ const i=ci(c); if(c.key==='fuse') i.kind='Fusion'; return i; }; }
 // =====================================================================
 // ============ VOXEL ICON SYSTEM (replaces emojis everywhere) =========
 // =====================================================================
