@@ -1224,7 +1224,7 @@ const Sky = {
     this.sun.position.set(cx + Math.cos(az) * 60, 40 + Math.max(el, 0.15) * 60, cz - 30 + Math.sin(az) * 25);
     this.sun.target.position.set(cx, 0, cz);
     const dusk = clamp(1 - Math.abs(el) * 4, 0, 1) * (t > 12 ? 1 : 0.7);
-    const C = this._c || (this._c = { w: new THREE.Color(0xffffff), o: new THREE.Color(0xff9a50), n: new THREE.Color(0x8090d0), d: new THREE.Color(0xcfe4ff), bg0: new THREE.Color(0x9fb8d0), bgd: new THREE.Color(0xe0a080), bgn: new THREE.Color(0x1e2444), gr: new THREE.Color(0x8a8f99), t1: new THREE.Color(), t2: new THREE.Color() });
+    const C = this._c || (this._c = { w: new THREE.Color(0xffffff), o: new THREE.Color(0xff9a50), n: new THREE.Color(0x8090d0), d: new THREE.Color(0xcfe4ff), bg0: new THREE.Color(0x9fb8d0), bgd: new THREE.Color(0xe0a080), bgn: new THREE.Color(0x1e2444), gr: new THREE.Color(0x8c9ab0), t1: new THREE.Color(), t2: new THREE.Color() });
     this.sun.color.copy(C.w).lerp(C.o, dusk);
     // nights stay readable: bright blue 'moonlight' instead of near-black
     this.sun.intensity = (0.38 + day * 0.62) * (0.75 + 0.25 * Weather.sunMul);
@@ -1234,7 +1234,7 @@ const Sky = {
     this.amb.intensity = 0.3 + this.night * 0.22;
     const dayBg = C.t1.copy(C.bg0).lerp(C.bgd, dusk * 0.6);
     const bg = C.t2.copy(C.bgn).lerp(dayBg, day);
-    bg.lerp(C.gr, Weather.gray * 0.6 * day);
+    bg.lerp(C.gr, Weather.gray * 0.35 * day);
     this.scene.background.copy(bg); this.scene.fog.color.copy(bg);
     Glow.setNight(this.night * 0.75);
     for (const m of W.facadeMats) m.emissiveIntensity = this.night * 0.85;
@@ -1245,49 +1245,98 @@ const Sky = {
 
 // ---------------- Weather ----------------
 const Weather = {
-  state: 'klar', next: 0, rainAmt: 0, snowAmt: 0, fogAmt: 0, gray: 0, sunMul: 1, wind: 0.3,
+  state: 'klar', next: 0, rainAmt: 0, snowAmt: 0, fogAmt: 0, gray: 0, sunMul: 1, wind: 0.3, cover: 0,
   init(scene) {
-    const n = 700;
-    const rg = new THREE.BufferGeometry(); this.rPos = new Float32Array(n * 6); this.rData = [];
-    for (let i = 0; i < n; i++) this.rData.push({ x: rand(-50, 50), y: rand(0, 30), z: rand(-50, 50) });
-    rg.setAttribute('position', new THREE.BufferAttribute(this.rPos, 3));
-    this.rain = new THREE.LineSegments(rg, new THREE.LineBasicMaterial({ color: 0xaac4dd, transparent: true, opacity: 0.55 }));
-    this.rain.frustumCulled = false; scene.add(this.rain);
-    const sg = new THREE.BufferGeometry(); this.sPos = new Float32Array(n * 3);
-    sg.setAttribute('position', new THREE.BufferAttribute(this.sPos, 3));
-    this.snow = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: 2, sizeAttenuation: false, transparent: true, opacity: 0.9 }));
-    this.snow.frustumCulled = false; scene.add(this.snow);
-    this.next = rand(90, 160);
+    // rain: short, thin, slanted streaks
+    const nR = 360;
+    const rg = new THREE.BufferGeometry(); this.rPos = new Float32Array(nR * 6); this.rData = [];
+    for (let i = 0; i < nR; i++) this.rData.push({ x: rand(-45, 45), y: rand(0, 26), z: rand(-45, 45), s: rand(0.85, 1.15) });
+    rg.setAttribute('position', new THREE.BufferAttribute(this.rPos, 3).setUsage(THREE.DynamicDrawUsage));
+    this.rain = new THREE.LineSegments(rg, new THREE.LineBasicMaterial({ color: 0xb8d4f0, transparent: true, opacity: 0.32, depthWrite: false }));
+    this.rain.frustumCulled = false; this.rain.renderOrder = 4; scene.add(this.rain);
+    // splash ripples on the ground
+    const ring = new THREE.RingGeometry(0.55, 0.75, 12); ring.rotateX(-Math.PI / 2);
+    this.ripMat = new THREE.MeshBasicMaterial({ color: 0xd0e4ff, transparent: true, opacity: 0.5, depthWrite: false });
+    this.rip = new THREE.InstancedMesh(ring, this.ripMat, 40); this.rip.frustumCulled = false; this.rip.renderOrder = 2; scene.add(this.rip);
+    this.ripData = []; for (let i = 0; i < 40; i++) this.ripData.push({ x: 0, z: 0, t: 1 });
+    this._m = new THREE.Matrix4();
+    // snow: soft round flakes that drift
+    const nS = 420; const sg = new THREE.BufferGeometry(); this.sPos = new Float32Array(nS * 3); this.sSize = new Float32Array(nS); this.sData = [];
+    for (let i = 0; i < nS; i++) { this.sData.push({ x: rand(-45, 45), y: rand(0, 24), z: rand(-45, 45), ph: rand(TAU), sp: rand(1.4, 2.4) }); this.sSize[i] = rand(0.18, 0.34); }
+    sg.setAttribute('position', new THREE.BufferAttribute(this.sPos, 3).setUsage(THREE.DynamicDrawUsage));
+    sg.setAttribute('size', new THREE.BufferAttribute(this.sSize, 1));
+    this.snowMat = new THREE.ShaderMaterial({
+      uniforms: { uScale: { value: 10 }, uA: { value: 1 } },
+      vertexShader: 'attribute float size; uniform float uScale; void main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_PointSize = max(2.0, size * uScale); }',
+      fragmentShader: 'uniform float uA; void main(){ float d = length(gl_PointCoord - 0.5) * 2.0; if (d > 1.0) discard; gl_FragColor = vec4(1.0, 1.0, 1.0, uA * (1.0 - smoothstep(0.5, 1.0, d))); }',
+      transparent: true, depthWrite: false,
+    });
+    this.snow = new THREE.Points(sg, this.snowMat); this.snow.frustumCulled = false; this.snow.renderOrder = 4; scene.add(this.snow);
+    // snow cover on streets
+    const cg = new THREE.PlaneGeometry(1, 1); cg.rotateX(-Math.PI / 2);
+    const cm = new THREE.MeshLambertMaterial({ color: 0xf4f8ff, transparent: true, opacity: 0, depthWrite: false });
+    this.coverMesh = new THREE.Group(); this.coverMesh.material = cm; this.coverMesh.visible = false; scene.add(this.coverMesh);
+    for (const [x0, x1] of [[-60, 131.5], [162.5, 360]]) { const m = new THREE.Mesh(cg, cm); m.scale.set(x1 - x0, 1, 366); m.position.set((x0 + x1) / 2, 0.165, 123); m.renderOrder = 1; this.coverMesh.add(m); }
+    this.next = rand(70, 110);
   },
   set(s) { this.state = s; },
   update(dt, cx, cz) {
     this.next -= dt;
-    if (this.next <= 0) { this.next = rand(100, 200); this.state = pick(['klar', 'klar', 'klar', 'regen', 'regen', 'nebel', 'schnee']); }
-    const tgt = { regen: [1, 0, 0.25], schnee: [0, 1, 0.35], nebel: [0, 0, 1], klar: [0, 0, 0] }[this.state];
-    this.rainAmt = lerp(this.rainAmt, tgt[0], dt * 0.3); this.snowAmt = lerp(this.snowAmt, tgt[1], dt * 0.3); this.fogAmt = lerp(this.fogAmt, tgt[2], dt * 0.3);
-    this.gray = Math.max(this.rainAmt, this.snowAmt * 0.7, this.fogAmt);
-    this.sunMul = 1 - this.gray * 0.6;
-    const scn = Sky.scene; scn.fog.near = lerp(120, 70, this.fogAmt); scn.fog.far = lerp(260, 125, this.fogAmt);
-    // rain
-    if (this.rainAmt < 0.005 && this.snowAmt < 0.005) { this.rain.visible = this.snow.visible = false; return; }
-    const nR = Math.floor(this.rData.length * this.rainAmt), nS = Math.floor(this.rData.length * this.snowAmt * 0.8);
-    for (let i = 0; i < this.rData.length; i++) {
-      const d = this.rData[i];
-      if (i < nR) {
-        d.y -= dt * 38; d.x += dt * this.wind * 6;
-        if (d.y < 0) { d.y = rand(20, 30); d.x = rand(-50, 50); d.z = rand(-50, 50); if (chance(0.1)) FX.norm.emit({ x: cx + d.x, y: 0.3, z: cz + d.z, vy: 1.5, life: 0.2, size: 0.15, c0: [0.8, 0.9, 1, 0.6], c1: [0.8, 0.9, 1, 0], g: 10 }); }
-        const o = i * 6; this.rPos[o] = cx + d.x; this.rPos[o + 1] = d.y; this.rPos[o + 2] = cz + d.z; this.rPos[o + 3] = cx + d.x - this.wind * 0.3; this.rPos[o + 4] = d.y + 1.2; this.rPos[o + 5] = cz + d.z;
-      } else { const o = i * 6; this.rPos[o + 1] = this.rPos[o + 4] = -100; }
-      if (i < nS) {
-        if (i >= nR || true) {
-          const sy = d.sy === undefined ? (d.sy = rand(0, 30)) : d.sy; d.sy -= dt * 3; d.sx = (d.sx || rand(-50, 50)) + Math.sin(GAME_TIME + i) * dt;
-          if (d.sy < 0) { d.sy = 30; d.sx = rand(-50, 50); d.sz = rand(-50, 50); }
-          this.sPos[i * 3] = cx + d.sx; this.sPos[i * 3 + 1] = d.sy; this.sPos[i * 3 + 2] = cz + (d.sz || (d.sz = rand(-50, 50)));
-        }
-      } else this.sPos[i * 3 + 1] = -100;
+    if (this.next <= 0) {
+      if (this.state !== 'klar') { this.state = 'klar'; this.next = rand(80, 140); }
+      else { this.state = pick(['regen', 'regen', 'schnee', 'nebel']); this.next = rand(35, 60); }
     }
-    this.rain.geometry.attributes.position.needsUpdate = true; this.snow.geometry.attributes.position.needsUpdate = true;
-    this.rain.visible = nR > 0; this.snow.visible = nS > 0;
+    const tgt = { regen: [1, 0, 0], schnee: [0, 1, 0], nebel: [0, 0, 1], klar: [0, 0, 0] }[this.state];
+    const k = Math.min(1, dt * 0.45);
+    this.rainAmt = lerp(this.rainAmt, tgt[0], k); this.snowAmt = lerp(this.snowAmt, tgt[1], k); this.fogAmt = lerp(this.fogAmt, tgt[2], k);
+    // only a light overcast tint, never a long flat grey
+    this.gray = Math.max(this.rainAmt * 0.45, this.snowAmt * 0.3, this.fogAmt * 0.6);
+    this.sunMul = 1 - this.gray * 0.5;
+    const scn = Sky.scene; scn.fog.near = lerp(130, 85, this.fogAmt); scn.fog.far = lerp(270, 190, this.fogAmt);
+    this.cover = clamp(this.cover + (this.snowAmt > 0.6 ? dt * 0.012 : -dt * 0.02), 0, 0.42);
+    this.coverMesh.visible = this.cover > 0.01; this.coverMesh.material.opacity = this.cover;
+    this.wind = 0.3 + Math.sin(GAME_TIME * 0.05) * 0.4;
+    // --- rain
+    const nR = Math.floor(this.rData.length * this.rainAmt);
+    this.rain.visible = nR > 0;
+    if (nR > 0) {
+      const wx = this.wind * 0.35, len = 0.9;
+      for (let i = 0; i < this.rData.length; i++) {
+        const d = this.rData[i], o = i * 6;
+        if (i >= nR) { this.rPos[o + 1] = this.rPos[o + 4] = -100; continue; }
+        d.y -= dt * 30 * d.s; d.x += dt * this.wind * 9;
+        if (d.y < 0) {
+          if (chance(0.35)) { const r = this.ripData.find(q => q.t >= 1); if (r) { r.x = cx + d.x; r.z = cz + d.z; r.t = 0; } }
+          d.y = rand(18, 26); d.x = rand(-45, 45); d.z = rand(-45, 45);
+        }
+        this.rPos[o] = cx + d.x; this.rPos[o + 1] = d.y; this.rPos[o + 2] = cz + d.z;
+        this.rPos[o + 3] = cx + d.x - wx * len; this.rPos[o + 4] = d.y + len; this.rPos[o + 5] = cz + d.z;
+      }
+      this.rain.geometry.attributes.position.needsUpdate = true;
+      this.rain.material.opacity = 0.22 + this.rainAmt * 0.23;
+    }
+    let anyRip = false;
+    for (let i = 0; i < this.ripData.length; i++) {
+      const r = this.ripData[i];
+      if (r.t < 1) { r.t = Math.min(1, r.t + dt * 2.2); anyRip = true; const s = 0.3 + r.t * 0.9; this._m.makeScale(s, 1, s); this._m.setPosition(r.x, 0.2, r.z); }
+      else this._m.makeScale(0, 0, 0);
+      this.rip.setMatrixAt(i, this._m);
+    }
+    this.rip.visible = anyRip; if (anyRip) { this.rip.instanceMatrix.needsUpdate = true; this.ripMat.opacity = 0.35 * this.rainAmt; }
+    // --- snow
+    const nS = Math.floor(this.sData.length * this.snowAmt);
+    this.snow.visible = nS > 0;
+    if (nS > 0) {
+      for (let i = 0; i < this.sData.length; i++) {
+        const d = this.sData[i];
+        if (i >= nS) { this.sPos[i * 3 + 1] = -100; continue; }
+        d.y -= dt * d.sp; d.x += (Math.sin(GAME_TIME * 1.3 + d.ph) * 0.6 + this.wind * 0.8) * dt; d.z += Math.cos(GAME_TIME * 1.1 + d.ph) * 0.4 * dt;
+        if (d.y < 0) { d.y = rand(20, 24); d.x = rand(-45, 45); d.z = rand(-45, 45); }
+        this.sPos[i * 3] = cx + d.x; this.sPos[i * 3 + 1] = d.y; this.sPos[i * 3 + 2] = cz + d.z;
+      }
+      this.snow.geometry.attributes.position.needsUpdate = true;
+      this.snowMat.uniforms.uScale.value = FX.norm.mat.uniforms.uScale.value; this.snowMat.uniforms.uA.value = 0.9;
+    }
   },
   label() { return { klar: 'Klar', regen: 'Regen', schnee: 'Schnee', nebel: 'Nebel' }[this.state]; }
 };
