@@ -44,6 +44,10 @@ input.name{font:900 22px ui-monospace,monospace;text-transform:uppercase;padding
 #toast{position:absolute;left:50%;bottom:22%;transform:translateX(-50%);font-size:15px;color:#fff;text-align:center;max-width:80vw}
 #clock{position:absolute;left:14px;top:118px;font-size:12px;color:#ddd}
 #arrow{position:absolute;width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:24px solid var(--gold2);filter:drop-shadow(0 0 2px #000) drop-shadow(0 0 2px #000);transform-origin:50% 50%}
+
+.jarrow{position:absolute;width:28px;height:28px;display:none;pointer-events:none}
+.jarrow i{position:absolute;left:1px;top:0;width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-bottom:24px solid #fff;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000)}
+.jarrow b{position:absolute;left:0;top:22px;width:28px;text-align:center;font:900 13px ui-monospace,monospace;text-shadow:1px 1px 0 #000,-1px -1px 0 #000}
 #prompt{position:absolute;left:50%;bottom:30%;transform:translateX(-50%);font-size:14px;color:var(--gold2)}
 #fps{position:absolute;left:14px;bottom:6px;font-size:10px;color:#888}
 /* ---------- Touch ---------- */
@@ -1569,10 +1573,11 @@ const VTYPES = {
   sonder: { name: 'Sondereinheit', len: 5.2, wid: 2.2, hgt: 1.9, cab: 0, max: 27, acc: 14, steer: 2.0, mass: 2.4, hp: 280, cols: ['#1a1a1a'], siren: 'police', stripe: '#3a3a3a' },
   feuerwehr: { name: 'Feuerwehr', len: 7.5, wid: 2.5, hgt: 2.5, cab: 0, max: 22, acc: 9, steer: 1.6, mass: 3.5, hp: 350, cols: ['#d0201a'], siren: 'fire', stripe: '#f0f0f0' },
   ambulanz: { name: 'Ambulanz', len: 5.6, wid: 2.2, hgt: 2.1, cab: 0, max: 26, acc: 12, steer: 2.0, mass: 2, hp: 200, cols: ['#f4f4f4'], siren: 'medic', stripe: '#2ecc40' },
+  velo: { name: 'Velo', len: 1.7, wid: 0.5, hgt: 0.6, bike: true, max: 8, acc: 6, steer: 3.4, mass: 0.2, hp: 30, cols: ['#e74c3c', '#2e86de', '#111', '#27ae60', '#f1c40f'] },
   traktor: { name: 'Traktor', len: 3.8, wid: 1.9, hgt: 1.6, tractor: true, max: 12, acc: 6, steer: 2.0, mass: 2.6, hp: 220, cols: ['#2e8b3a', '#c0392b', '#2e8b3a'] },
   tram: { name: 'Tram', len: 16, wid: 2.6, hgt: 2.8, cab: 0, max: 10, acc: 4, steer: 0, mass: 12, hp: 99999, cols: ['#1f5fbf'], tram: true },
 };
-const CIVIL_TYPES = ['kleinwagen', 'kleinwagen', 'limousine', 'limousine', 'sport', 'suv', 'suv', 'liefer', 'lastwagen', 'toeffli', 'motorrad', 'kleinwagen'];
+const CIVIL_TYPES = ['velo', 'velo', 'kleinwagen', 'kleinwagen', 'limousine', 'limousine', 'sport', 'suv', 'suv', 'liefer', 'lastwagen', 'toeffli', 'motorrad', 'kleinwagen'];
 const VGeo = {};
 const _vboxCache = new Map();
 function vbox(w, h, d, y, z = 0) { const k = w + ',' + h + ',' + d + ',' + y + ',' + z; let g = _vboxCache.get(k); if (!g) { g = new THREE.BoxGeometry(w, h, d); g.translate(0, y, z); g._shared = true; _vboxCache.set(k, g); } return g; }
@@ -2298,6 +2303,13 @@ const CivAI = {
         else { p.steer(0, 0, 0, dt); p.dir = Math.atan2(tx - p.x, tz - p.z); p.atkT = (p.atkT || 0) - dt; if (p.atkT <= 0) { p.atkT = 0.7; Combat.melee(p, 'fist'); } }
         break;
       }
+      case 'chat': {
+        p.steer(0, 0, 0, dt);
+        if (p.chatX !== undefined) p.dir += angDiff(p.dir, Math.atan2(p.chatX - p.x, p.chatZ - p.z)) * dt * 4;
+        if (Math.sin(GAME_TIME * 3 + p.id) > 0.6) p.armR.rotation.x = -1.2 + Math.sin(GAME_TIME * 9 + p.id) * 0.4; else p.armR.rotation.x *= 0.9;
+        if (p.stateT > p.chatT) this.calm(p);
+        break;
+      }
       case 'injured': {
         const n = Walk.nodes[p.node]; if (n) { const dx = n.x - p.x, dz = n.z - p.z; if (dx * dx + dz * dz < 0.6) { const o = n.nb; p.prevNode = p.node; p.node = pick(o); } p.steer(dx, dz, 0.7, dt); }
         if (p.hp > p.maxHp * 0.6) this.calm(p);
@@ -2398,7 +2410,7 @@ const Lane = {
       const lat = Math.abs(dx * -fz + dz * fx); if (lat > v.T.wid / 2 + r + 0.4) return;
       lim = Math.min(lim, Math.max(0, (al - v.T.len / 2 - r - 1.2) * 1.4));
     };
-    for (const o of World.vehicles) { if (o === v) continue; if (Math.abs(o.x - v.x) > 25 || Math.abs(o.z - v.z) > 25) continue; for (const c of o.worldCircles(o._wc2 || (o._wc2 = []))) chk(c.x, c.z, o.cr, o); }
+    for (const o of World.vehicles) { if (o === v) continue; if (Math.abs(o.x - v.x) > 25 || Math.abs(o.z - v.z) > 25) continue; if (o.parked && !o.driver && Math.abs((o.x - v.x) * -fz + (o.z - v.z) * fx) > 1.7) continue; for (const c of o.worldCircles(o._wc2 || (o._wc2 = []))) chk(c.x, c.z, o.cr, o); }
     for (const t of World.trams) for (const c of t.circles()) chk(c.x, c.z, 1.4, t);
     for (const p of World.peds) { if (!p.alive || p.vehicle) continue; if (Math.abs(p.x - v.x) > 15 || Math.abs(p.z - v.z) > 15) continue; chk(p.x, p.z, p.r, p); }
     return lim;
@@ -2897,10 +2909,21 @@ const Population = {
     add(0, 0, 26.5, 18, 0); add(0, 0, 26.5, 24.5, 0); add(0, 2, 26.5, 20, 0);
     add(6, 1, 26, 8, 0); add(6, 1, 26, 14, 0); add(6, 2, 26, 8, 0); add(6, 4, 26, 20, 0); add(5, 6, 26, 26, Math.PI);
     add(0, 6, 8, 23, Math.PI / 2); add(0, 6, 22, 23, Math.PI / 2); add(1, 1, 22, 27.5, Math.PI / 2);
+    // curb-side parking along streets
+    let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+    for (let k = 0; k < 60 && this.parkingSpots.filter(s => s.curb).length < 22; k++) {
+      const i = Math.floor(rnd() * 64), n = Roads.nodes[i], nb = n.nb[Math.floor(rnd() * n.nb.length)], B = Roads.nodes[nb];
+      if (n.x === B.x && (n.x === 84 || n.x === 126)) continue; // tram streets
+      if (n.z === B.z && Math.min(n.x, B.x) === 126 && Math.max(n.x, B.x) === 168) continue; // bridges
+      let dx = B.x - n.x, dz = B.z - n.z; const L = Math.hypot(dx, dz); dx /= L; dz /= L; const off = Roads.laneOffset(dx, dz);
+      const t = 12 + rnd() * 18; const x = n.x + off.x * 1.8 + dx * t, z = n.z + off.z * 1.8 + dz * t;
+      if (this.parkingSpots.some(s => dist(s.x, s.z, x, z) < 7)) continue;
+      this.parkingSpots.push({ x, z, a: Math.atan2(dx, dz), v: null, t: 0, curb: true });
+    }
     for (const s of this.parkingSpots) this.fillSpot(s);
   },
   fillSpot(s) {
-    const t = s === this.parkingSpots[9] ? 'postauto' : s === this.parkingSpots[2] ? 'traktor' : pick(['kleinwagen', 'limousine', 'sport', 'suv', 'liefer', 'motorrad', 'toeffli', 'sport', 'suv']);
+    const t = s.curb ? pick(['kleinwagen', 'kleinwagen', 'limousine', 'sport', 'motorrad', 'toeffli']) : s === this.parkingSpots[9] ? 'postauto' : s === this.parkingSpots[2] ? 'traktor' : pick(['kleinwagen', 'limousine', 'sport', 'suv', 'liefer', 'motorrad', 'toeffli', 'sport', 'suv']);
     s.v = spawnVehicle(t, s.x, s.z, s.a); s.v.parked = true;
   },
   update(dt) {
@@ -2912,7 +2935,7 @@ const Population = {
       this.pedT = 0.25;
       const civs = World.peds.filter(p => p.kind === 'civ');
       for (const p of civs) { const d = dist(p.x, p.z, pp.x, pp.z); if ((d > vr + 40 && !p.keep) || (!p.alive && (p.deadT || 0) > 50 && d > vr)) removePed(p); }
-      if (civs.length < 26 * nightF * mobile) {
+      if (civs.length < 38 * nightF * mobile) {
         const n = Walk.nodes[randi(0, Walk.nodes.length - 1)]; const d = dist(n.x, n.z, pp.x, pp.z);
         if (d > vr + 3 && d < vr + 30) { const p = spawnPed('civ', n.x + rand(-1, 1), n.z + rand(-1, 1)); CivAI.init(p); }
         else if (d < vr && civs.length < 8) { /* keep some on screen at start */ }
@@ -2937,7 +2960,7 @@ const Population = {
         else if (!v.ai && !v.parked && !v.driver && d > vr + 60) removeVehicle(v);
       }
       const traffic = World.vehicles.filter(v => v.ai === TrafficAI).length;
-      if (traffic < 15 * mobile) this.spawnTraffic(pp, vr);
+      if (traffic < 19 * mobile) this.spawnTraffic(pp, vr);
       const patrol = World.vehicles.filter(v => v.ai === PoliceCarAI).length;
       if (Police.level === 0 && patrol < 2 && chance(0.15)) { const v = Police.spawnUnit('polizei'); if (v) { v.sirenOn = false; } }
       for (const s of this.parkingSpots) {
@@ -2996,7 +3019,7 @@ const Population = {
           p.x += dx / d * (rr - d); p.z += dz / d * (rr - d);
           if (sp > 4 && p.alive) {
             const wasAlive = p.alive;
-            p.damage(sp * 3.2, a.driver || null, 'car', a.vx * 0.9 + dx / d * 3, a.vz * 0.9 + dz / d * 3);
+            p.damage(sp * 3.2 * Math.min(1, a.T.mass + 0.2), a.driver || null, 'car', a.vx * 0.9 + dx / d * 3, a.vz * 0.9 + dz / d * 3);
             Sfx.play('hit', a.distToCam());
             if (a.driver === Game.player && wasAlive) Crime.commit(p.kind === 'cop' || p.kind === 'swat' ? 'assault_cop' : 'hit_ped', p.x, p.z, p);
             a.vx *= 0.93; a.vz *= 0.93;
@@ -3031,7 +3054,7 @@ const Store = {
 const Game = {
   running: false, paused: false, player: null, camTarget: { x: 0, z: 0 }, viewH: 30, viewR: 40, money: 0, lowQ: false,
   stats: { kills: 0, copKills: 0, cars: 0, copCars: 0, maxWanted: 0, time: 0 },
-  missionsDone: [false, false, false],
+  missionsDone: new Array(12).fill(false),
   init() {
     this.canvas = $('game');
     this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: false, powerPreference: 'high-performance' });
@@ -3047,7 +3070,7 @@ const Game = {
     Roads.build(); Walk.build();
     FX.init(this.scene); Glow.init(this.scene); Sky.init(this.scene); Weather.init(this.scene);
     Combat.init(this.scene); Props.init(this.scene); Pickups.init(this.scene);
-    Markers.init(this.scene); Phones.init(this.scene);
+    Jobs.init(); Shops2.init(this.scene); Markers.init(this.scene); Phones.init(this.scene); Fun.init(this.scene); Decor.init(this.scene);
     MiniMap.init();
     // event subscriptions
     EventBus.on('NPC', ['GUNSHOT', 'EXPLOSION', 'VEHICLE_DESTROYED', 'NPC_DEAD', 'NPC_INJURED', 'NPC_FLEEING', 'FIRE_STARTED', 'CRIME'], e => CivAI.onEvent(e));
@@ -3111,7 +3134,7 @@ const Game = {
     for (const v of [...World.vehicles]) { v.remove(this.scene); } World.vehicles.length = 0;
     for (const t of World.trams) this.scene.remove(t.mesh); World.trams.length = 0;
     Combat.clear(); Fires.clear(); Police.reset(); Emergency.units.length = 0; EventBus.reset(); Pickups.clearDrops(); Props.clearBarriers();
-    Missions.reset(); Special.clear(); Swiss.reset(); WorldEvents.reset(); Score.reset(save);
+    Missions.reset(); Special.clear(); Swiss.reset(); Fun.reset(); WorldEvents.reset(); Score.reset(save);
     // player
     const sp = Places.spawn;
     const P = this.player = new Ped('player', sp.x, sp.z, this.scene);
@@ -3120,10 +3143,10 @@ const Game = {
     World.peds.push(P);
     const ring = new THREE.Mesh(PedGeo.marker, new THREE.MeshBasicMaterial({ color: 0xf6d66f, transparent: true, opacity: 0.85, depthTest: false }));
     ring.renderOrder = 10; ring.position.y = 0.05; P.mesh.add(ring); P.ring = ring;
-    this.money = 500; this.stats = { kills: 0, copKills: 0, cars: 0, copCars: 0, maxWanted: 0, time: 0 }; this.missionsDone = [false, false, false];
+    this.money = 500; this.stats = { kills: 0, copKills: 0, cars: 0, copCars: 0, maxWanted: 0, time: 0 }; this.missionsDone = new Array(12).fill(false);
     if (save) {
       this.money = save.money || 0; Object.assign(this.stats, save.stats || {});
-      this.missionsDone = save.missions || this.missionsDone;
+      this.missionsDone = new Array(12).fill(false).map((f, i) => !!(save.missions && save.missions[i])); Fun.coinsTaken = new Set(save.coins || []); Fun.syncCoins();
       P.inv = { fist: { clip: Infinity, ammo: Infinity } };
       for (const k in (save.inv || {})) if (WEAPONS[k]) P.inv[k] = save.inv[k];
       P.weapon = save.weapon && P.inv[save.weapon] ? save.weapon : 'fist';
@@ -3143,13 +3166,13 @@ const Game = {
   setPause(v) {
     if (!this.running) return;
     this.paused = v; $('pause').classList.toggle('hidden', !v);
-    if (v) { const s = this.stats; $('statsText').innerHTML = `<b>Spielzeit</b> ${Math.floor(s.time / 60)} min · <b>Geld</b> ${fmtCHF(this.money)}<br><b>Ausgeschaltet</b> ${s.kills} · <b>davon Polizei</b> ${s.copKills}<br><b>Fahrzeuge zerstört</b> ${s.cars} · <b>Polizeiautos</b> ${s.copCars} · <b>Höchste Fahndung</b> ${s.maxWanted}<br><b>Missionen</b> ${this.missionsDone.filter(Boolean).length}/3 · <b>Wetter</b> ${Weather.label()} · <b>Zeit</b> ${Sky.str()}<br><span style="color:#888">Events: ${EventBus.stats.emitted} erzeugt · ${EventBus.stats.merged} zusammengeführt · ${EventBus.stats.dropped} begrenzt</span>`; }
+    if (v) { const s = this.stats; $('statsText').innerHTML = `<b>Spielzeit</b> ${Math.floor(s.time / 60)} min · <b>Geld</b> ${fmtCHF(this.money)}<br><b>Ausgeschaltet</b> ${s.kills} · <b>davon Polizei</b> ${s.copKills}<br><b>Fahrzeuge zerstört</b> ${s.cars} · <b>Polizeiautos</b> ${s.copCars} · <b>Höchste Fahndung</b> ${s.maxWanted}<br><b>Missionen</b> ${Jobs.count()}/${Jobs.total()} · <b>Goldvreneli</b> ${Fun.coinsTaken.size}/${Fun.coins.length}<br>${Jobs.list.map(e => `<span style="color:${e.color}">${e.name}</span> ${Jobs.done(e)}/${e.missions.length}`).join(' · ')} · <b>Wetter</b> ${Weather.label()} · <b>Zeit</b> ${Sky.str()}<br><span style="color:#888">Events: ${EventBus.stats.emitted} erzeugt · ${EventBus.stats.merged} zusammengeführt · ${EventBus.stats.dropped} begrenzt</span>`; }
     else { this.last = performance.now(); Sfx.init(); }
   },
   saveGame() {
     const P = this.player; if (!P) return;
     const inv = {}; for (const k in P.inv) if (k !== 'fist') inv[k] = { clip: P.inv[k].clip, ammo: P.inv[k].ammo };
-    Store.save({ points: Score.points, lives: Score.lives, nextLife: Score.nextLife, money: this.money, inv, weapon: P.weapon, missions: this.missionsDone, stats: this.stats, hp: Math.max(30, P.hp), armor: P.armor, tod: Sky.tod });
+    Store.save({ points: Score.points, lives: Score.lives, nextLife: Score.nextLife, money: this.money, inv, weapon: P.weapon, missions: this.missionsDone, coins: [...Fun.coinsTaken], stats: this.stats, hp: Math.max(30, P.hp), armor: P.armor, tod: Sky.tod });
   },
   addMoney(n, silent) { this.money = Math.max(0, this.money + n); if (n > 0 && !silent) Sfx.play('cash'); },
   giveWeapon(id, ammo) {
@@ -3342,7 +3365,7 @@ const Game = {
     if (sprintBtn && ml < 0.15) { mv.x = P.fx; mv.z = P.fz; ml = 1; } // sprint button alone: run forward
     const run = ml > 0.85;
     const hurt = P.hp < 30 ? 0.85 : 1;
-    const speed = (sprintBtn ? 8.6 : run ? 5.0 : 3.6 * ml / 0.85) * hurt;
+    const speed = (sprintBtn ? 8.6 : run ? 5.0 : 3.6 * ml / 0.85) * hurt * (P.boostT > 0 ? 1.3 : 1);
     if (ml > 0.15) { const l = Math.hypot(mv.x, mv.z); P.mvx = mv.x / l * speed; P.mvz = mv.z / l * speed; P.moveSpeed = speed; if (sprintBtn && chance(dt * 12)) FX.norm.emit({ x: P.x, y: 0.25, z: P.z, vx: rand(-0.5, 0.5), vy: 0.6, vz: rand(-0.5, 0.5), life: 0.5, size: 0.3, size1: 0.8, c0: [0.8, 0.78, 0.72, 0.5], c1: [0.8, 0.8, 0.8, 0] }); }
     else { P.mvx = P.mvz = 0; P.moveSpeed = 0; }
     // aim & fire
@@ -3435,7 +3458,7 @@ const Game = {
     Combat.update(dt); Special.update(dt); Score.update(dt); WorldEvents.update(dt); Fires.update(dt); Props.update(dt); Pickups.update(dt, P);
     Police.update(dt); Emergency.update(dt); Missions.update(dt); Interact.update(dt); Phones.update(dt);
     EventBus.update();
-    Population.update(dt); Swiss.update(dt);
+    Population.update(dt); Swiss.update(dt); Fun.update(dt); Decor.update(dt);
     if (P.vehicle && !P.vehicle.alive) { const v = P.vehicle; exitVehicle(P); }
     if (Police.level > this.stats.maxWanted) this.stats.maxWanted = Police.level;
     // end states
@@ -3491,9 +3514,11 @@ const Interact = {
       return;
     }
     const near = (pl, r = 2.2) => pl && dist(P.x, P.z, pl.x, pl.z) < r;
-    if (near(Places.gunshop, 3)) { this.current = { action: () => Shop.openGuns() }; label = 'Waffenladen'; }
-    else if (near(Places.pharmacy, 2.6)) { this.current = { action: () => Shop.openPharmacy() }; label = 'Apotheke'; }
-    else { for (const ph of Places.phones) if (near(ph, 2.2) && !Missions.active && !Game.missionsDone[ph.mission]) { this.current = { action: () => Missions.offer(ph.mission) }; label = 'Telefon'; } }
+    if (near(Places.pharmacy, 2.6)) { this.current = { action: () => Shop.openPharmacy() }; label = 'Apotheke'; }
+    else {
+      for (const ph of Places.phones) if (near(ph, 2.2) && !Missions.active && Jobs.next(ph.emp) >= 0) { this.current = { action: () => Missions.offer(Jobs.next(ph.emp)) }; label = 'Telefon'; }
+      if (!this.current) { const s = Shops2.near(P); if (s) { this.current = { action: () => s.action() }; label = s.label; } }
+    }
     const veh = !this.current && Game.nearestEnterable(P);
     this.setPrompt(this.current ? (Input.touchMode ? '' : `[F] ${label}`) : '');
     this.setBtn(this.current ? label.toUpperCase().slice(0, 9) : veh ? 'EIN&shy;STEIGEN' : '–');
@@ -3506,13 +3531,15 @@ const Shop = {
   open: false,
   show(html) { this.open = true; $('modalCard').innerHTML = html; $('modal').classList.remove('hidden'); },
   close() { this.open = false; $('modal').classList.add('hidden'); Game.last = performance.now(); },
-  openGuns() {
-    const rows = WEAPON_ORDER.filter(k => WEAPONS[k].price).map(k => {
+  openGuns(shop) {
+    shop = shop || this.gunShop || { name: 'WAFFEN · MUNITION', quote: 'Alles legal registriert. Fast alles.', mult: 1, stock: null };
+    this.gunShop = shop; const mul = shop.mult; this.mult = mul;
+    const rows = WEAPON_ORDER.filter(k => WEAPONS[k].price && (!shop.stock || shop.stock.includes(k))).map(k => {
       const W = WEAPONS[k]; const has = Game.player.inv[k];
       return `<div class="shoprow"><span><img src="${weaponIconURL(k)}" style="width:36px;vertical-align:middle;image-rendering:pixelated"> ${W.name}</span>
-        <span>${has && W.melee ? '<span style="color:#888">im Besitz</span>' : has ? `<span class="btn" data-buy="ammo:${k}">+${W.ammoPack} Schuss · ${fmtCHF(W.ammoPrice)}</span>` : `<span class="btn" data-buy="gun:${k}">${fmtCHF(W.price)}</span>`}</span></div>`;
+        <span>${has && W.melee ? '<span style="color:#888">im Besitz</span>' : has ? `<span class="btn" data-buy="ammo:${k}">+${W.ammoPack} Schuss · ${fmtCHF(Math.round(W.ammoPrice * mul))}</span>` : `<span class="btn" data-buy="gun:${k}">${fmtCHF(Math.round(W.price * mul))}</span>`}</span></div>`;
     }).join('');
-    this.show(`<h2>WAFFEN · MUNITION</h2><p>„Alles legal registriert. Fast alles.“ — Dein Guthaben: <b style="color:#f6d66f">${fmtCHF(Game.money)}</b></p>${rows}<div style="text-align:right;margin-top:10px"><span class="btn dark" data-close="1">ZURÜCK</span></div>`);
+    this.show(`<h2>${shop.name}</h2><p>„${shop.quote}“ — Dein Guthaben: <b style="color:#f6d66f">${fmtCHF(Game.money)}</b></p>${rows}<div style="text-align:right;margin-top:10px"><span class="btn dark" data-close="1">ZURÜCK</span></div>`);
     this.bind();
   },
   openPharmacy() {
@@ -3526,7 +3553,7 @@ const Shop = {
     $('modalCard').querySelectorAll('[data-close]').forEach(b => b.onclick = () => this.close());
     $('modalCard').querySelectorAll('[data-buy]').forEach(b => b.onclick = () => {
       const [kind, id] = b.dataset.buy.split(':'); const P = Game.player;
-      const cost = kind === 'gun' ? WEAPONS[id].price : kind === 'ammo' ? WEAPONS[id].ammoPrice : kind === 'health' ? 200 : 500;
+      const cost = kind === 'gun' ? Math.round(WEAPONS[id].price * (this.mult || 1)) : kind === 'ammo' ? Math.round(WEAPONS[id].ammoPrice * (this.mult || 1)) : kind === 'health' ? 200 : 500;
       if (Game.money < cost) { Sfx.play('empty'); b.textContent = 'Zu wenig Geld'; return; }
       if (kind === 'health') { if (P.hp >= P.maxHp) return; P.hp = P.maxHp; }
       if (kind === 'armor') { if (P.armor >= 100) return; P.armor = 100; }
@@ -3548,8 +3575,8 @@ const Markers = {
     this.g = new THREE.Group(); this.g.add(this.beam, this.ring); this.g.visible = false; scene.add(this.g);
     // static shop markers (small rings)
     const mk = (pl, col) => { const r = new THREE.Mesh(new THREE.RingGeometry(1.1, 1.5, 16), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.7, side: THREE.DoubleSide, depthWrite: false })); r.rotation.x = -Math.PI / 2; r.position.set(pl.x, 0.24, pl.z); scene.add(r); return r; };
-    this.shops = [mk(Places.gunshop, 0xff7a3a), mk(Places.pharmacy, 0x3ad17a), mk(Places.paint, 0x76d8c5)];
-    this.shops[2].scale.set(2.2, 2.2, 2.2);
+    this.shops = [mk(Places.pharmacy, 0x3ad17a), mk(Places.paint, 0x76d8c5)];
+    this.shops[1].scale.set(2.2, 2.2, 2.2); for (const s of Shops2.guns) this.shops.push(mk(s, 0xff7a3a));
   },
   set(x, z) { if (x === null) { this.g.visible = false; this.target = null; return; } this.g.visible = true; this.g.position.set(x, 0, z); this.target = { x, z }; },
   update(dt) { if (this.g.visible) { this.ring.rotation.z += dt; this.beam.material.opacity = 0.18 + Math.sin(GAME_TIME * 4) * 0.08; } for (const s of this.shops) s.material.opacity = 0.45 + Math.sin(GAME_TIME * 3) * 0.25; }
@@ -3557,9 +3584,9 @@ const Markers = {
 const Phones = {
   init(scene) {
     this.meshes = Places.phones.map(ph => {
-      const g = new THREE.Group();
+      const g = new THREE.Group(); ph.mission = -1;
       const box = new THREE.Mesh(vbox(1.1, 2.3, 1.1, 1.15), new THREE.MeshLambertMaterial({ color: '#a8d8ff', transparent: true, opacity: 0.55 }));
-      const top = new THREE.Mesh(vbox(1.2, 0.35, 1.2, 2.45), matCol('#f6c700', true));
+      const top = new THREE.Mesh(vbox(1.2, 0.35, 1.2, 2.45), new THREE.MeshLambertMaterial({ color: ph.emp.color, emissive: ph.emp.color, emissiveIntensity: 0.9 }));
       const frame = new THREE.Mesh(vbox(1.2, 0.15, 1.2, 0.08), matCol('#333'));
       g.add(box, top, frame); g.position.set(ph.x, 0.15, ph.z); scene.add(g);
       Collide.add(ph.x - 0.5, ph.z - 0.5, ph.x + 0.5, ph.z + 0.5, 'prop');
@@ -3568,7 +3595,7 @@ const Phones = {
   },
   update(dt) {
     for (const m of this.meshes) {
-      const avail = !Missions.active && !Game.missionsDone[m.ph.mission];
+      const avail = !Missions.active && Jobs.next(m.ph.emp) >= 0;
       m.top.material.emissiveIntensity = avail ? 0.5 + Math.sin(GAME_TIME * 6) * 0.5 : 0.1;
       if (avail && chance(dt * 0.5)) { const d = dist(m.ph.x, m.ph.z, Game.camTarget.x, Game.camTarget.z); if (d < 25 && Sfx.ctx) { const t = Sfx.ctx.currentTime; Sfx.tone(t, 0.08, 0.06 * Sfx.vol(d), 1400, 1400); Sfx.tone(t + 0.1, 0.08, 0.06 * Sfx.vol(d), 1400, 1400); } }
     }
@@ -3629,8 +3656,8 @@ const Missions = {
   ],
   reset() { if (this.active) this.end(); this.active = null; Markers.set(null); HUD.mission(''); HUD.timer(''); },
   offer(i) {
-    const d = this.defs[i]; Sfx.play('mission');
-    Shop.show(`<h2>☎ ${d.name}</h2><p>${d.brief}</p><p style="color:#f6d66f">Belohnung: ${fmtCHF(d.reward)}</p><div style="text-align:right"><span class="btn dark" data-close="1">AUFLEGEN</span> <span class="btn" id="acceptMission">ANNEHMEN</span></div>`);
+    const d = this.defs[i]; Sfx.play('mission'); const e = Jobs.empOf(i);
+    Shop.show(`<div style="color:${e.color};font-size:12px;letter-spacing:1px">☎ ${e.name.toUpperCase()} · AUFTRAG ${Jobs.done(e) + 1}/${e.missions.length}</div><h2>${d.name}</h2><p style="color:#bbb;font-style:italic">${e.hello}</p><p>${d.brief}</p><p style="color:#888;font-size:12px">— ${e.boss}</p><p style="color:#f6d66f">Belohnung: ${fmtCHF(d.reward)}</p><div style="text-align:right"><span class="btn dark" data-close="1">AUFLEGEN</span> <span class="btn" id="acceptMission">ANNEHMEN</span></div>`);
     $('modalCard').querySelector('[data-close]').onclick = () => Shop.close();
     $('acceptMission').onclick = () => { Shop.close(); this.begin(i); };
   },
@@ -3645,7 +3672,8 @@ const Missions = {
     if (r === 'ok') {
       Game.missionsDone[m.i] = true; Game.addMoney(m.d.reward, true); Sfx.play('mission'); const pts = Score.add(m.d.reward * 3);
       HUD.notify('MISSION ERFÜLLT', '+ ' + fmtCHF(m.d.reward) + ' · + ' + fmtPts(pts) + ' Punkte', 3.5, '#76d8c5'); this.end(); Game.saveGame();
-      if (Game.missionsDone.every(Boolean)) setTimeout(() => HUD.notify('ZÜRICH GEHÖRT DIR', 'Alle Missionen erfüllt. Weitere Aufträge folgen: Alpenexpress · Chaos am HB', 5, '#f6d66f'), 4000);
+      const e = Jobs.empOf(m.i); if (Jobs.next(e) < 0) setTimeout(() => HUD.notify(e.name.toUpperCase(), 'Alle Aufträge erledigt! Bonus CHF 5\'000', 4, e.color), 3800), Game.addMoney(5000, true);
+      if (Game.missionsDone.every(Boolean)) setTimeout(() => HUD.notify('ZÜRICH GEHÖRT DIR', 'Alle 12 Missionen erfüllt. Du bist eine Legende.', 5, '#f6d66f'), 8000);
     } else if (typeof r === 'string' && r.startsWith('fail')) { Sfx.play('fail'); HUD.notify('MISSION GESCHEITERT', r.slice(5), 3.5, '#e5383b'); this.end(); }
   },
   onEvent(e) { }
@@ -3679,7 +3707,7 @@ const HUD = {
     // fps
     this._ft = (this._ft || 0) + dt; if (this._ft > 0.5 && DEBUG) { this._ft = 0; $('fps').textContent = Math.round(1 / Game.fpsAcc) + ' fps · ' + World.peds.length + ' NPC · ' + World.vehicles.length + ' Fz'; }
     MiniMap.draw();
-    this.arrow();
+    this.arrow(); Jobs.updateArrows();
   },
   icons: {},
   icon(id) { return this.icons[id] || (this.icons[id] = weaponIconURL(id)); },
@@ -3727,8 +3755,8 @@ const MiniMap = {
     g.imageSmoothingEnabled = false;
     g.drawImage(this.img, -(pp.x + this.o), -(pp.z + this.o), this.img.width * this.S, this.img.height * this.S);
     const dot = (x, z, col, s = 3) => { g.fillStyle = col; g.fillRect(x - pp.x - s / 2 / zoom, z - pp.z - s / 2 / zoom, s / zoom, s / zoom); };
-    for (const ph of Places.phones) if (!Game.missionsDone[ph.mission] && !Missions.active) dot(ph.x, ph.z, '#f6c700', 6);
-    dot(Places.gunshop.x, Places.gunshop.z, '#ff7a3a', 5); dot(Places.pharmacy.x, Places.pharmacy.z, '#3ad17a', 5); dot(Places.paint.x, Places.paint.z, '#76d8c5', 5);
+    for (const ph of Places.phones) if (Jobs.next(ph.emp) >= 0 && !Missions.active) dot(ph.x, ph.z, ph.emp.color, 7);
+    for (const s of Shops2.guns) dot(s.x, s.z, '#ff7a3a', 5); for (const c of Fun.coins) if (!c.taken && dist(c.x, c.z, pp.x, pp.z) < 18) dot(c.x, c.z, '#f6d66f', 3); dot(Places.pharmacy.x, Places.pharmacy.z, '#3ad17a', 5); dot(Places.paint.x, Places.paint.z, '#76d8c5', 5);
     const blink = Math.floor(GAME_TIME * 4) % 2;
     for (const v of World.vehicles) if (v.isPolice && v.alive && v.sirenOn) dot(v.x, v.z, blink ? '#3a7aff' : '#ff3a3a', 4);
     for (const p of World.peds) if ((p.kind === 'cop' || p.kind === 'swat') && p.alive && !p.vehicle && Police.level > 0) dot(p.x, p.z, '#7ab0ff', 3);
@@ -3970,7 +3998,7 @@ const GameOver = {
     $('hud').classList.add('hidden'); $('touch').classList.add('hidden');
     const s = Game.stats;
     $('goScore').textContent = fmtPts(Score.points);
-    $('goStats').innerHTML = `${Game.missionsDone.filter(Boolean).length}/3 Missionen · ${WorldEvents.done} Events · ${s.kills} ausgeschaltet · ${s.cars} Fahrzeuge zerstört · höchste Fahndung ${s.maxWanted}★ · ${Math.floor(s.time / 60)} min`;
+    $('goStats').innerHTML = `${Jobs.count()}/${Jobs.total()} Missionen · ${WorldEvents.done} Events · ${s.kills} ausgeschaltet · ${s.cars} Fahrzeuge zerstört · höchste Fahndung ${s.maxWanted}★ · ${Math.floor(s.time / 60)} min`;
     $('goEntry').classList.remove('hidden'); $('goTable').innerHTML = Score.table(Score.list());
     let nm = ''; try { nm = localStorage.getItem('swissMayhem.name') || ''; } catch (e) { }
     $('goName').value = nm; $('gameover').classList.remove('hidden');
@@ -4346,9 +4374,492 @@ const DemoTractorAI = {
   }
 };
 
-if (/debug/.test(location.search)) window.__G = { Game, World, Police, Missions, Combat, Population, EventBus, Fires, Props, Emergency, Sky, Weather, Places, Roads, spawnVehicle, spawnPed, Input, Pickups, WEAPONS, Score, WorldEvents, GameOver, Special, Swiss };
 
 EventBus.on('Demo', ['GUNSHOT', 'EXPLOSION', 'VEHICLE_DESTROYED'], e => DemoAI.onEvent(e));
+
+// ======================================================================
+// Employers (GTA 2 style), 9 new missions, phone arrows
+// ======================================================================
+const MH = {
+  track(m, o) { (m.objs || (m.objs = [])).push(o); return o; },
+  cleanup(m) {
+    for (const o of m.objs || []) { if (o.T) { o.mission = false; if (o.parked && !o.driver) o.parked = true; } else { o.keep = false; } }
+    for (const it of m.items || []) World.scene.remove(it.mesh);
+  },
+  lane(ni, nb, t) {
+    const A = Roads.nodes[ni], B = Roads.nodes[nb]; let dx = B.x - A.x, dz = B.z - A.z; const L = Math.hypot(dx, dz); dx /= L; dz /= L;
+    const off = Roads.laneOffset(dx, dz); return { x: A.x + off.x + dx * t, z: A.z + off.z + dz * t, a: Math.atan2(dx, dz), dx, dz, L };
+  },
+  nodeAway(minD, maxD, filter) {
+    const pp = playerPos(); const c = [];
+    for (let i = 0; i < Roads.nodes.length; i++) { const n = Roads.nodes[i], d = dist(n.x, n.z, pp.x, pp.z); if (d >= minD && d <= maxD && (!filter || filter(n))) c.push(i); }
+    return c.length ? pick(c) : Roads.nearest(pp.x + 60, pp.z);
+  },
+  driving(m, type, color, minD, maxD, driverKind = 'civ') {
+    const ni = this.nodeAway(minD, maxD), nb = pick(Roads.nodes[ni].nb); const p = this.lane(ni, nb, 10);
+    const v = spawnVehicle(type, p.x, p.z, p.a, color); v.mission = true; this.track(m, v);
+    const d = spawnPed(driverKind, v.x, v.z); if (driverKind === 'civ') CivAI.init(d); d.keep = true; this.track(m, d); putInVehicle(d, v, true);
+    TrafficAI.init(v); Lane.start(v, ni, nb); return v;
+  },
+  curbCar(m, type, color, ni, nb, t) {
+    const p = this.lane(ni, nb, t); const v = spawnVehicle(type, p.x + (-p.dz) * 2.4, p.z + p.dx * 2.4, p.a, color);
+    v.parked = true; v.mission = true; this.track(m, v); return v;
+  },
+  gang(m, x, z, n, weapons, spread = 3) {
+    const out = [];
+    for (let i = 0; i < n; i++) { const p = spawnPed('gang', x + rand(-spread, spread), z + rand(-spread, spread)); GangAI.init(p, p.x, p.z); p.weapon = pick(weapons); p.keep = true; this.track(m, p); out.push(p); }
+    return out;
+  },
+  walkIn(x0, z0, x1, z1) { return Walk.nodes.filter(n => n.x > x0 && n.x < x1 && n.z > z0 && n.z < z1); },
+  item(m, x, z, color, size = 0.8) {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(size, size, size), new THREE.MeshLambertMaterial({ color, emissive: color, emissiveIntensity: 0.45 }));
+    mesh.position.set(x, 0.9, z); mesh.castShadow = true; World.scene.add(mesh);
+    const it = { x, z, mesh, taken: false }; (m.items || (m.items = [])).push(it); return it;
+  },
+  spinItems(m) { for (const it of m.items || []) if (!it.taken) { it.mesh.rotation.y += 0.05; it.mesh.position.y = 0.9 + Math.sin(GAME_TIME * 4 + it.x) * 0.15; } },
+  nearest(list, f) { const pp = playerPos(); let b = null, bd = 1e9; for (const o of list) { if (!f(o)) continue; const d = dist(o.x, o.z, pp.x, pp.z); if (d < bd) { bd = d; b = o; } } return b; },
+  vehGone(v) { return !v.alive || v.removed || !v.driver || !v.driver.alive || v.driver === Game.player; },
+};
+
+// ---------------- new mission definitions (indices 3..11) ----------------
+Missions.defs.push(
+  // 3 · Bünzli 2
+  {
+    name: 'Nachtruhe!', reward: 2500,
+    brief: 'Frau Bünzli kann nicht schlafen. An der Langstrasse feiern drei Partylöwen mit Lautsprechern, und das um diese Uhrzeit! Sorg dafür, dass dort wieder Ruhe herrscht. Endgültig.',
+    start(m) {
+      const nodes = MH.walkIn(Places.langstrasse.x0, Places.langstrasse.z0, Places.langstrasse.x1, Places.langstrasse.z1).sort(() => Math.random() - 0.5).slice(0, 3);
+      m.party = nodes.map(n => { const g = MH.gang(m, n.x, n.z, 1, ['bat', 'fist', 'knife'], 0.5)[0]; g.party = true; return g; });
+      m.boomT = 0; HUD.mission('Bring die drei <b>Partylöwen</b> zum Schweigen.');
+    },
+    update(m, dt) {
+      const left = m.party.filter(p => p.alive && !p.removed);
+      HUD.mission(`Partylöwen übrig: <b>${left.length}</b>`);
+      if (!left.length) return 'ok';
+      const t = MH.nearest(left, () => true); Markers.set(t.x, t.z);
+      m.boomT -= dt; if (m.boomT <= 0 && Sfx.ctx && Sfx.on) { m.boomT = 0.47; for (const p of left) { const d = dist(p.x, p.z, Game.camTarget.x, Game.camTarget.z); if (d < 40) { Sfx.tone(Sfx.ctx.currentTime, 0.18, 0.18 * Sfx.vol(d), 90, 45, 'sine'); } } }
+    },
+    cleanup(m) { MH.cleanup(m); },
+  },
+  // 4 · Bünzli 3
+  {
+    name: 'Falsch parkiert', reward: 3000,
+    brief: 'Vier Autos stehen seit Tagen im Halteverbot. Der Verein hat Briefe geschrieben, Zettel hinter die Scheibenwischer geklemmt und die Gemeinde angerufen. Nichts hat geholfen. Jetzt bist du dran: Zerstör sie alle.',
+    start(m) {
+      m.cars = []; const pp = playerPos(); const used = new Set();
+      for (let k = 0; k < 4; k++) {
+        let ni, nb, tries = 0;
+        do { ni = MH.nodeAway(30, 120); nb = pick(Roads.nodes[ni].nb); tries++; } while ((used.has(ni) || [84, 126].includes(Roads.nodes[ni].x) && Roads.nodes[ni].x === Roads.nodes[nb].x) && tries < 20);
+        used.add(ni); m.cars.push(MH.curbCar(m, pick(['kleinwagen', 'limousine', 'suv']), pick(['#e74c3c', '#f1c40f', '#ff7ac8', '#2ecc71']), ni, nb, rand(14, 26)));
+      }
+      m.timer = 150;
+    },
+    update(m, dt) {
+      m.timer -= dt; const left = m.cars.filter(v => v.alive && !v.removed);
+      HUD.mission(`Falschparkierer übrig: <b>${left.length}</b>`);
+      if (!left.length) return 'ok'; if (m.timer <= 0) return 'fail:Die Falschparkierer sind weggefahren.';
+      const t = MH.nearest(left, () => true); Markers.set(t.x, t.z);
+    },
+    cleanup(m) { MH.cleanup(m); },
+  },
+  // 5 · Bünzli 4
+  {
+    name: 'Waschküchen-Streit', reward: 4500,
+    brief: 'Jemand hat am Dienstag die Waschküche benutzt. Am DIENSTAG! Und dann die Wäsche von Frau Bünzli an die Langstrasse verschleppt. Hol den Wäschekorb zurück und bring ihn zu ihrem Telefon. Schnell, bevor die Wäsche Gerüche annimmt.',
+    start(m) {
+      const n = pick(MH.walkIn(Places.langstrasse.x0, Places.langstrasse.z0, Places.langstrasse.x1, Places.langstrasse.z1));
+      m.basket = MH.item(m, n.x, n.z, '#f4efe5', 0.9); m.stage = 0;
+      MH.gang(m, n.x, n.z, 3, ['knife', 'pistol', 'bat'], 3);
+      Markers.set(n.x, n.z); HUD.mission('Hol den <b>Wäschekorb</b> an der Langstrasse.');
+    },
+    update(m, dt) {
+      const pp = playerPos(); MH.spinItems(m);
+      const home = Jobs.byId.buenzli.phone;
+      if (m.stage === 0 && dist(pp.x, pp.z, m.basket.x, m.basket.z) < 1.6 && !Game.player.vehicle) { m.stage = 1; m.basket.taken = true; World.scene.remove(m.basket.mesh); m.timer = 90; Sfx.play('pickup'); Markers.set(home.x, home.z); HUD.mission('Bring den Korb zu <b>Frau Bünzli</b>!'); }
+      if (m.stage === 1) { m.timer -= dt; if (m.timer <= 0) return 'fail:Zu spät. Die Wäsche riecht jetzt nach Kebab.'; if (dist(pp.x, pp.z, home.x, home.z) < 4) return 'ok'; }
+    },
+    cleanup(m) { MH.cleanup(m); },
+  },
+  // 6 · Kartell 2
+  {
+    name: 'Käseschmuggel', reward: 3500,
+    brief: 'Ein Lieferwagen voller französischem Käse wartet auf dich. Ohne Zollstempel, versteht sich. Bring ihn in unseren Hof im Industriequartier. Die Zollfahndung wird nicht begeistert sein.',
+    start(m) {
+      const ni = MH.nodeAway(45, 90), nb = pick(Roads.nodes[ni].nb);
+      m.van = MH.curbCar(m, 'liefer', '#f6d66f', ni, nb, 18); m.van.hp = m.van.maxHp = 260; m.stage = 0;
+      Markers.set(m.van.x, m.van.z); HUD.mission('Steig in den gelben <b>Käse-Lieferwagen</b>.');
+    },
+    update(m, dt) {
+      const v = m.van, P = Game.player; if (!v.alive || v.removed) return 'fail:Der Käse ist geschmolzen. Komplett.';
+      if (m.stage === 0) { Markers.set(v.x, v.z); if (P.vehicle === v) { m.stage = 1; m.timer = 110; Police.setHeat(Math.max(Police.heat, LEVEL_HEAT[2] + 0.5)); Police.knownX = v.x; Police.knownZ = v.z; Police.unseenT = 0; HUD.toast('Die Zollfahndung ist dir auf den Fersen!'); } }
+      if (m.stage >= 1) {
+        m.timer -= dt; if (m.timer <= 0) return 'fail:Zu lange gebraucht. Der Käse ist jetzt Raclette.';
+        if (P.vehicle !== v) { Markers.set(v.x, v.z); HUD.mission('Zurück in den <b>Lieferwagen</b>!'); }
+        else { Markers.set(Places.mafia.x, Places.mafia.z); HUD.mission('Bring den Käse in den <b>Kartell-Hof</b>.'); if (dist(v.x, v.z, Places.mafia.x, Places.mafia.z) < 7 && v.speed < 4) return 'ok'; }
+      }
+    },
+    cleanup(m) { MH.cleanup(m); },
+  },
+  // 7 · Kartell 3
+  {
+    name: 'Fondue-Krieg', reward: 4000,
+    brief: 'Die Fondue-Familie aus dem Niederdorf verkauft Käse unter unserem Preis. Das ist Krieg. Geh hin und erledige ihre fünf Leute. Und lass die Caquelons ganz, die sind antik.',
+    start(m) { const r = W.blockRect(4, 1); m.gang = MH.gang(m, r.cx, r.z1 - 1.5, 5, ['pistol', 'smg', 'shotgun'], 6); Markers.set(r.cx, r.z1 - 1.5); HUD.mission('Erledige die <b>Fondue-Familie</b> im Niederdorf.'); },
+    update(m, dt) {
+      const left = m.gang.filter(p => p.alive && !p.removed); HUD.mission(`Fondue-Familie übrig: <b>${left.length}</b>`);
+      if (!left.length) return 'ok'; const t = MH.nearest(left, () => true); Markers.set(t.x, t.z);
+    },
+    cleanup(m) { MH.cleanup(m); },
+  },
+  // 8 · Kartell 4
+  {
+    name: 'Lieferstopp', reward: 6000,
+    brief: 'Die Konkurrenz fährt ihren Käse mit drei grünen Lieferwagen durch die Stadt. Ab heute nicht mehr. Zerstör alle drei, bevor sie ausgeliefert haben.',
+    start(m) { m.vans = [0, 1, 2].map(() => { const v = MH.driving(m, 'liefer', '#2e8b3a', 40, 130); v.mood = 1.1; return v; }); m.timer = 160; },
+    update(m, dt) {
+      m.timer -= dt; const left = m.vans.filter(v => v.alive && !v.removed); HUD.mission(`Lieferwagen übrig: <b>${left.length}</b>`);
+      if (!left.length) return 'ok'; if (m.timer <= 0) return 'fail:Der Käse wurde ausgeliefert. Schande.';
+      const t = MH.nearest(left, () => true); Markers.set(t.x, t.z);
+    },
+    cleanup(m) { MH.cleanup(m); },
+  },
+  // 9 · Gnomen 2
+  {
+    name: 'Der Steuerprüfer', reward: 4000,
+    brief: 'Ein Steuerprüfer ist in seiner grauen Limousine unterwegs zu uns. Er hat Fragen. Wir haben keine Antworten. Sorg dafür, dass er nie ankommt.',
+    start(m) { m.car = MH.driving(m, 'limousine', '#7f8c8d', 50, 110); m.car.hp = m.car.maxHp = 200; m.timer = 120; },
+    update(m, dt) {
+      m.timer -= dt; const v = m.car;
+      if (MH.vehGone(v)) return 'ok';
+      if (m.timer <= 0) return 'fail:Der Steuerprüfer sitzt jetzt in der Bank. Mit Ordnern.';
+      Markers.set(v.x, v.z); HUD.mission('Stopp den <b>Steuerprüfer</b> (graue Limousine).');
+      if (dist(v.x, v.z, playerPos().x, playerPos().z) < 25 && !m.warned) { m.warned = true; v.panicT = 999; v.mood = 1.4; HUD.toast('Er hat dich gesehen und gibt Gas!'); }
+    },
+    cleanup(m) { MH.cleanup(m); },
+  },
+  // 10 · Gnomen 3
+  {
+    name: 'Goldtransport', reward: 6000,
+    brief: 'Vor der Bank steht ein gepanzerter Transporter mit Goldbarren. Diskret, wie immer. Fahr ihn zum Bootssteg am See, dort wartet ein Boot. Die Polizei wird misstrauisch werden, also fahr vorsichtig. Jede Delle kostet.',
+    start(m) {
+      const ni = Roads.nearest(Places.bank.x, Places.bank.z + 6), nb = Roads.nodes[ni].nb.find(k => Roads.nodes[k].z === Roads.nodes[ni].z) ?? Roads.nodes[ni].nb[0];
+      m.truck = MH.curbCar(m, 'liefer', '#c8a030', ni, nb, 15); m.truck.hp = m.truck.maxHp = 480; m.stage = 0;
+      m.quay = { x: 230, z: 302 }; Markers.set(m.truck.x, m.truck.z); HUD.mission('Steig in den <b>Goldtransporter</b>.');
+    },
+    update(m, dt) {
+      const v = m.truck, P = Game.player; if (!v.alive || v.removed) return 'fail:Das Gold liegt jetzt verstreut auf der Strasse.';
+      if (m.stage === 0) { Markers.set(v.x, v.z); if (P.vehicle === v) { m.stage = 1; Police.setHeat(Math.max(Police.heat, LEVEL_HEAT[3] + 0.5)); Police.knownX = v.x; Police.knownZ = v.z; Police.unseenT = 0; HUD.toast('Stiller Alarm ausgelöst! Fahr zum See.'); } }
+      if (m.stage === 1) {
+        if (P.vehicle !== v) { Markers.set(v.x, v.z); HUD.mission('Zurück in den <b>Goldtransporter</b>!'); }
+        else { Markers.set(m.quay.x, m.quay.z); HUD.mission(`Fahr zum <b>Bootssteg</b> · Zustand ${Math.round(v.hp / v.maxHp * 100)}%`); if (dist(v.x, v.z, m.quay.x, m.quay.z) < 7 && v.speed < 4) { const bonus = Math.round(v.hp / v.maxHp * 3000); Game.addMoney(bonus, true); HUD.toast(`Unbeschädigt-Bonus: ${fmtCHF(bonus)}`); return 'ok'; } }
+      }
+    },
+    cleanup(m) { MH.cleanup(m); },
+  },
+  // 11 · Gnomen 4
+  {
+    name: 'Geldwäsche', reward: 8000,
+    brief: 'Fünf Taschen mit Bargeld liegen in der Stadt verteilt. Fragen Sie nicht, woher. Sammeln Sie alle ein und bringen Sie sie zur Bank. Wir waschen sie dann. Mit Feinwaschmittel.',
+    start(m) {
+      const pp = playerPos(); const nodes = Walk.nodes.filter(n => { const d = dist(n.x, n.z, pp.x, pp.z); return d > 25 && d < 140; }).sort(() => Math.random() - 0.5);
+      const chosen = []; for (const n of nodes) { if (chosen.every(c => dist(c.x, c.z, n.x, n.z) > 30)) chosen.push(n); if (chosen.length >= 5) break; }
+      m.bags = chosen.map(n => MH.item(m, n.x, n.z, '#3bd16f', 0.7)); m.timer = 180; m.stage = 0;
+    },
+    update(m, dt) {
+      m.timer -= dt; MH.spinItems(m); const pp = playerPos();
+      if (m.timer <= 0) return 'fail:Die Taschen wurden gefunden. Von der Steuerverwaltung.';
+      if (m.stage === 0) {
+        for (const b of m.bags) if (!b.taken && dist(pp.x, pp.z, b.x, b.z) < (Game.player.vehicle ? 3.5 : 1.6)) { b.taken = true; World.scene.remove(b.mesh); Sfx.play('cash'); }
+        const left = m.bags.filter(b => !b.taken); HUD.mission(`Geldtaschen: <b>${5 - left.length}/5</b>`);
+        if (!left.length) { m.stage = 1; HUD.toast('Alle Taschen! Ab zur Bank.'); } else { const t = MH.nearest(left, () => true); Markers.set(t.x, t.z); }
+      }
+      if (m.stage === 1) { Markers.set(Places.bank.x, Places.bank.z); HUD.mission('Bring das Geld zur <b>Bank</b>.'); if (dist(pp.x, pp.z, Places.bank.x, Places.bank.z) < 6) return 'ok'; }
+    },
+    cleanup(m) { MH.cleanup(m); },
+  },
+);
+
+// ---------------- Employers ----------------
+const Jobs = {
+  list: [
+    { id: 'buenzli', name: 'Bünzli-Verein Kreis 4', boss: 'Frau Bünzli, Präsidentin', color: '#5affa0', letter: 'B', missions: [0, 3, 4, 5], hello: 'Grüezi. Hier spricht Frau Bünzli vom Verein für Ruhe und Ordnung.' },
+    { id: 'kartell', name: 'Raclette-Kartell', boss: 'Don Raclette', color: '#ff9a3a', letter: 'K', missions: [1, 6, 7, 8], hello: 'Hier ist Don Raclette. Hör gut zu, ich sage es nur einmal.' },
+    { id: 'gnomen', name: 'Die Gnomen vom Paradeplatz', boss: 'Dr. Goldbach, Privatbankier', color: '#5ab0ff', letter: 'G', missions: [2, 9, 10, 11], hello: 'Guten Tag. Dr. Goldbach am Apparat. Diskretion ist selbstverständlich.' },
+  ],
+  byId: {},
+  init() {
+    const ph = Places.phones; // world phones: 0 Niederdorf, 1 Paradeplatz, 2 south
+    const kr = W.blockRect(0, 1);
+    this.byId.buenzli = this.list[0]; this.list[0].phone = ph[0];
+    this.byId.gnomen = this.list[2]; this.list[2].phone = ph[1];
+    this.byId.kartell = this.list[1]; this.list[1].phone = { x: kr.x1 - 1.2, z: kr.cz };
+    Places.phones = this.list.map(e => Object.assign(e.phone, { emp: e }));
+    // GTA2-style arrows
+    const hud = $('hud');
+    for (const e of this.list) { const d = document.createElement('div'); d.className = 'jarrow'; d.innerHTML = `<i style="border-bottom-color:${e.color}"></i><b style="color:${e.color}">${e.letter}</b>`; hud.appendChild(d); e.arrow = d; }
+  },
+  next(e) { for (const i of e.missions) if (!Game.missionsDone[i]) return i; return -1; },
+  done(e) { return e.missions.filter(i => Game.missionsDone[i]).length; },
+  empOf(i) { return this.list.find(e => e.missions.includes(i)); },
+  total() { return this.list.reduce((s, e) => s + e.missions.length, 0); },
+  count() { return Game.missionsDone.filter(Boolean).length; },
+  updateArrows() {
+    const show = Game.running && !Missions.active && Game.player && Game.player.alive;
+    for (const e of this.list) {
+      const el = e.arrow; const avail = show && this.next(e) >= 0;
+      if (!avail) { if (el.style.display !== 'none') el.style.display = 'none'; continue; }
+      el.style.display = 'block';
+      const v = (this._v || (this._v = new THREE.Vector3())).set(e.phone.x, 3.2, e.phone.z).project(Game.camera);
+      const sx = (v.x * 0.5 + 0.5) * innerWidth, sy = (-v.y * 0.5 + 0.5) * innerHeight;
+      const m = 34, on = sx > m && sx < innerWidth - m && sy > 70 && sy < innerHeight - m;
+      if (on) { el.style.left = (sx - 14) + 'px'; el.style.top = (sy - 40 + Math.sin(GAME_TIME * 6) * 5) + 'px'; el.style.transform = 'rotate(180deg)'; el.firstElementChild.nextElementSibling.style.transform = 'rotate(180deg)'; }
+      else {
+        const cx = innerWidth / 2, cy = innerHeight / 2, a = Math.atan2(sy - cy, sx - cx);
+        const rx = innerWidth / 2 - 30, ry = innerHeight / 2 - 40; const k = Math.min(rx / Math.abs(Math.cos(a) || 1e-6), ry / Math.abs(Math.sin(a) || 1e-6));
+        el.style.left = (cx + Math.cos(a) * k - 14) + 'px'; el.style.top = (cy + Math.sin(a) * k - 14) + 'px';
+        el.style.transform = `rotate(${a + Math.PI / 2}rad)`; el.firstElementChild.nextElementSibling.style.transform = `rotate(${-(a + Math.PI / 2)}rad)`;
+      }
+    }
+  }
+};
+
+// ======================================================================
+// City life: gun shops, kiosks, speed cameras, Goldvreneli, busker,
+// tourist groups, chatting people, night-time complaints, decor
+// ======================================================================
+function booth(scene, x, z, nx, nz, col, text) {
+  // small shop kiosk; (nx,nz) = direction to the street
+  const g = new THREE.Group(); const rot = Math.atan2(nx, nz);
+  g.add(new THREE.Mesh(vbox(2.4, 2.3, 1.6, 1.15), matCol('#d8d0c4')));
+  g.add(new THREE.Mesh(vbox(2.6, 0.12, 2.3, 2.35, 0.35), matCol(col)));
+  g.add(new THREE.Mesh(vbox(1.8, 0.9, 0.06, 1.35, 0.81), matCol('#2a3a4a')));
+  const sm = new THREE.MeshBasicMaterial({ map: signTex(text, '#120814', col, 128, 28), transparent: true });
+  const s = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.55), sm); s.position.set(0, 2.75, 0.5); g.add(s); Signs.push(sm);
+  g.position.set(x, 0.15, z); g.rotation.y = rot; g.traverse(o => { if (o.isMesh) o.castShadow = true; }); scene.add(g);
+  const hx = Math.abs(nz) > 0.5 ? 1.25 : 0.85, hz = Math.abs(nz) > 0.5 ? 0.85 : 1.25;
+  Collide.add(x - hx, z - hz, x + hx, z + hz, 'prop');
+  return { x: x + nx * 1.6, z: z + nz * 1.6 };
+}
+
+const Shops2 = {
+  guns: [], kiosks: [],
+  init(scene) {
+    const ALL = null;
+    this.guns.push(Object.assign({ x: Places.gunshop.x, z: Places.gunshop.z }, { name: 'WAFFEN · MUNITION', quote: 'Alles legal registriert. Fast alles.', mult: 1, stock: ALL }));
+    const mk = (bx, bz, edge, name, quote, mult, stock, col) => {
+      const r = W.blockRect(bx, bz); let x, z, nx = 0, nz = 0;
+      if (edge === 'e') { x = r.x1 - 2.3; z = r.cz + 6; nx = 1; } else if (edge === 'w') { x = r.x0 + 2.3; z = r.cz - 6; nx = -1; } else if (edge === 's') { x = r.cx + 7; z = r.z1 - 2.3; nz = 1; } else { x = r.cx - 7; z = r.z0 + 2.3; nz = -1; }
+      const p = booth(scene, x, z, nx, nz, col, name.split(' ·')[0]);
+      this.guns.push(Object.assign(p, { name, quote, mult, stock }));
+    };
+    mk(1, 3, 'e', 'HINTERZIMMER · LANGSTRASSE', 'Keine Fragen, keine Quittung. Dafür 20 % billiger.', 0.8, ALL, '#ff4fa8');
+    mk(6, 2, 'w', 'JAGD & FISCHEREI', 'Für den Hirsch und andere Probleme.', 1, ['knife', 'hockey', 'pistol', 'revolver', 'crossbow', 'shotgun', 'doublebarrel', 'rifle', 'sniper'], '#2e8b3a');
+    mk(5, 1, 's', 'BÜCHSENMACHER', 'Schweizer Präzision seit 1891.', 1.1, ['pistol', 'revolver', 'taser', 'smg', 'shotgun', 'rifle', 'grenade', 'molotov', 'mine', 'gl'], '#e3bc48');
+    mk(0, 4, 'e', 'ARMEE-LIQUIDATION', 'Aus Restbeständen. Kaum benutzt.', 1.05, ['rifle', 'sniper', 'minigun', 'rocket', 'grenade', 'mine', 'gl', 'flamer', 'alphorn', 'cheese', 'lightning'], '#7a8a5a');
+    // kiosks (vending): Ovomaltine & Rivella
+    const kiosk = (bx, bz, edge) => {
+      const r = W.blockRect(bx, bz); const x = edge === 'n' ? r.cx + 2 : r.cx - 2, z = edge === 'n' ? r.z0 + 0.9 : r.z1 - 0.9;
+      const g = new THREE.Group();
+      g.add(new THREE.Mesh(vbox(0.9, 1.8, 0.7, 0.9), matCol('#e8a020')));
+      g.add(new THREE.Mesh(vbox(0.7, 0.6, 0.05, 1.3, 0.36), new THREE.MeshLambertMaterial({ color: '#fff4c0', emissive: '#ffcf60', emissiveIntensity: 0.6 })));
+      g.position.set(x, 0.15, z); g.rotation.y = edge === 'n' ? Math.PI : 0; g.traverse(o => { if (o.isMesh) o.castShadow = true; }); scene.add(g);
+      Collide.add(x - 0.45, z - 0.4, x + 0.45, z + 0.4, 'prop');
+      this.kiosks.push({ x, z: z + (edge === 'n' ? -0.9 : 0.9) });
+    };
+    [[2, 1, 's'], [4, 2, 'n'], [5, 4, 's'], [1, 5, 'n'], [6, 3, 'n'], [0, 1, 's'], [2, 6, 'n'], [4, 5, 's']].forEach(a => kiosk(...a));
+  },
+  near(P) {
+    for (const s of this.guns) if (dist(P.x, P.z, s.x, s.z) < 2.6) return { label: 'Waffenladen', action: () => Shop.openGuns(s) };
+    for (const k of this.kiosks) if (dist(P.x, P.z, k.x, k.z) < 1.8) return { label: 'Automat', action: () => this.openKiosk() };
+    return null;
+  },
+  openKiosk() {
+    Shop.show(`<h2>SNACK-AUTOMAT</h2><p>„Bitte passend bezahlen. Kein Wechselgeld.“ — Guthaben: <b style="color:#f6d66f">${fmtCHF(Game.money)}</b></p>
+      <div class="shoprow"><span>Rivella (+30 Gesundheit)</span><span class="btn" data-k="riv">${fmtCHF(10)}</span></div>
+      <div class="shoprow"><span>Ovomaltine (30 s schneller rennen)</span><span class="btn" data-k="ovo">${fmtCHF(15)}</span></div>
+      <div class="shoprow"><span>Schoggi (+10 Gesundheit, glücklich)</span><span class="btn" data-k="sch">${fmtCHF(5)}</span></div>
+      <div style="text-align:right;margin-top:10px"><span class="btn dark" data-close="1">ZURÜCK</span></div>`);
+    $('modalCard').querySelector('[data-close]').onclick = () => Shop.close();
+    $('modalCard').querySelectorAll('[data-k]').forEach(b => b.onclick = () => {
+      const P = Game.player, k = b.dataset.k, cost = { riv: 10, ovo: 15, sch: 5 }[k];
+      if (Game.money < cost) { Sfx.play('empty'); b.textContent = 'Zu wenig Geld'; return; }
+      Game.addMoney(-cost); Sfx.play('pickup');
+      if (k === 'riv') P.hp = Math.min(P.maxHp, P.hp + 30);
+      if (k === 'ovo') { P.boostT = 30; HUD.toast('Ovo-Power! Du rennst schneller.'); }
+      if (k === 'sch') { P.hp = Math.min(P.maxHp, P.hp + 10); Score.add(50); }
+      Shop.close();
+    });
+  }
+};
+
+// ---------------- Fun stuff ----------------
+const Fun = {
+  radars: [], coins: [], coinsTaken: new Set(), busker: null, buskerT: 0, tourists: null, tourT: 20, chatT: 2, quietCD: 0,
+  init(scene) {
+    this.scene = scene;
+    // speed cameras ("Blitzer")
+    const spots = [[1, 2, 0], [3, 4, 0], [5, 6, 1], [6, 2, 1], [2, 5, 0], [4, 1, 1]];
+    for (const [i, j, axis] of spots) {
+      const x = axis ? W.c(i) + 20 : W.c(i) + 6.5, z = axis ? W.c(j) + 6.5 : W.c(j) + 20;
+      const g = new THREE.Group(); g.add(new THREE.Mesh(vbox(0.18, 2.4, 0.18, 1.2), matCol('#8a8f96'))); const head = new THREE.Mesh(vbox(0.55, 0.45, 0.4, 2.5), matCol('#d0d4d8')); g.add(head);
+      const lens = new THREE.MeshBasicMaterial({ color: '#331010' }); const l = new THREE.Mesh(vbox(0.2, 0.2, 0.05, 2.5, 0.22), lens); g.add(l);
+      g.position.set(x, 0.15, z); g.rotation.y = axis ? Math.PI : -Math.PI / 2; scene.add(g); g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+      Collide.add(x - 0.15, z - 0.15, x + 0.15, z + 0.15, 'prop');
+      this.radars.push({ x, z, cd: 0, lens });
+    }
+    // Goldvreneli (hidden gold coins)
+    const cg = new THREE.CylinderGeometry(0.42, 0.42, 0.1, 14); cg.rotateX(Math.PI / 2);
+    const cm = new THREE.MeshLambertMaterial({ color: '#f6c33a', emissive: '#c08a10', emissiveIntensity: 0.6 });
+    const step = Math.max(1, Math.floor(Walk.nodes.length / 15));
+    for (let k = 0; k < 15; k++) {
+      const n = Walk.nodes[(k * step + 5) % Walk.nodes.length]; const m = new THREE.Mesh(cg, cm); m.position.set(n.x, 0.9, n.z); scene.add(m);
+      this.coins.push({ x: n.x, z: n.z, mesh: m, taken: false, id: k });
+    }
+    const fl = document.createElement('div'); fl.id = 'flash'; fl.style.cssText = 'position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:8;transition:opacity .35s'; document.body.appendChild(fl); this.flash = fl;
+    EventBus.on('Fun', ['GUNSHOT', 'EXPLOSION'], e => this.onNoise(e));
+  },
+  syncCoins() { for (const c of this.coins) { c.taken = this.coinsTaken.has(c.id); c.mesh.visible = !c.taken; } },
+  reset() { this.coinsTaken = new Set(); this.syncCoins(); if (this.busker && !this.busker.removed) removePed(this.busker); this.busker = null; this.tourists = null; },
+  onNoise(e) {
+    const t = Sky.tod; if (!(t >= 22 || t < 6) || this.quietCD > 0 || e.source !== Game.player) return;
+    const b = W.blockAt(Math.floor(e.x / W.P), Math.floor(e.z / W.P)); if (!['C', 'A', 'W', 'N', 'X'].includes(b)) return;
+    if (chance(0.35)) { this.quietCD = 25; HUD.toast(pick(['«Ruhe! Es ist nach 22 Uhr!»', '«Ich rufe die Polizei, Sie Rüpel!»', '«Nachtruhe! Das ist hier nicht Berlin!»', '«Hören Sie sofort auf, ich will schlafen!»'])); Police.addHeat(0.4); }
+  },
+  update(dt) {
+    const P = Game.player, pp = playerPos();
+    this.quietCD -= dt; if (P.boostT > 0) P.boostT -= dt;
+    // speed cameras
+    for (const r of this.radars) {
+      r.cd -= dt;
+      const v = P.vehicle; if (!v || r.cd > 0) continue;
+      if (dist(v.x, v.z, r.x, r.z) < 8) {
+        const kmh = Math.round(v.speed * 3.6);
+        if (kmh > 50) {
+          r.cd = 10; this.flash.style.transition = 'none'; this.flash.style.opacity = 0.85; requestAnimationFrame(() => { this.flash.style.transition = 'opacity .4s'; this.flash.style.opacity = 0; });
+          if (Sfx.ctx && Sfx.on) Sfx.tone(Sfx.ctx.currentTime, 0.12, 0.15, 3000, 2000, 'square');
+          const fine = kmh > 100 ? 600 : kmh > 80 ? 300 : 150;
+          Game.addMoney(-fine, true); HUD.toast(`Geblitzt! ${kmh} statt 50 km/h – Busse ${fmtCHF(fine)}`);
+          if (kmh > 100) { Police.addHeat(1.2); HUD.toast(`Raser! ${kmh} km/h – die Polizei ist informiert.`); }
+        }
+      }
+    }
+    // coins
+    for (const c of this.coins) {
+      if (c.taken) continue; c.mesh.rotation.y += dt * 3; c.mesh.position.y = 0.9 + Math.sin(GAME_TIME * 3 + c.id) * 0.12;
+      if (dist(pp.x, pp.z, c.x, c.z) < (P.vehicle ? 2.5 : 1.4)) {
+        c.taken = true; c.mesh.visible = false; this.coinsTaken.add(c.id); Sfx.play('cash'); Game.addMoney(300, true); Score.add(1000);
+        const n = this.coinsTaken.size;
+        if (n >= this.coins.length) { Game.addMoney(10000, true); Game.giveWeapon('cheese', 30); HUD.notify('ALLE GOLDVRENELI!', '+ CHF 10\'000 und eine Käserad-Kanone', 4, '#f6d66f'); }
+        else HUD.toast(`Goldvreneli gefunden! (${n}/${this.coins.length}) +CHF 300`);
+        Game.saveGame();
+      }
+    }
+    // alphorn busker at the lake park
+    this.buskerT -= dt;
+    if (this.buskerT <= 0) {
+      this.buskerT = 1; const r = W.blockRect(6, 5), bx = r.cx + 3, bz = r.cz + 3;
+      if (this.busker && (this.busker.removed || (!this.busker.alive && dist(pp.x, pp.z, bx, bz) > Game.viewR + 10))) { if (!this.busker.removed) removePed(this.busker); this.busker = null; }
+      if (!this.busker && dist(pp.x, pp.z, bx, bz) > Game.viewR + 5 && dist(pp.x, pp.z, bx, bz) < 120) {
+        const b = this.busker = spawnPed('civ', bx, bz); b.keep = true; b.ai = BuskerAI; b.dir = 0.8;
+        const horn = new THREE.Group(); const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.16, 3.2, 6), matCol('#8a5a30')); tube.rotation.x = Math.PI / 2 - 0.25; tube.position.set(0, 0.95, 1.5); horn.add(tube);
+        const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.18, 0.5, 8), matCol('#6a4020')); bell.position.set(0, 0.55, 3.1); horn.add(bell); b.body.add(horn);
+        b.onDeath = () => { Pickups.add('alphorn', b.x + 1, b.z, false, 8); };
+      }
+    }
+    // tourist groups
+    this.tourT -= dt;
+    if (this.tourists) { const alive = this.tourists.filter(p => !p.removed && p.ai === TouristAI); if (!alive.length || (alive[0] && dist(alive[0].x, alive[0].z, pp.x, pp.z) > Game.viewR + 60)) { for (const p of this.tourists) if (!p.removed) { p.keep = false; if (p.ai === TouristAI) { p.ai = CivAI; CivAI.init(p); } } this.tourists = null; this.tourT = rand(20, 40); } }
+    else if (this.tourT <= 0) {
+      this.tourT = 10;
+      const cand = Walk.nodes.filter(n => { const b = W.blockAt(Math.floor(n.x / W.P), Math.floor(n.z / W.P)); const d = dist(n.x, n.z, pp.x, pp.z); return 'HAGNBP'.includes(b) && d > Game.viewR && d < Game.viewR + 35; });
+      if (cand.length) this.spawnTourists(pick(cand));
+    }
+    // chatting groups fill the sidewalks
+    this.chatT -= dt;
+    if (this.chatT <= 0) {
+      this.chatT = 2.5;
+      const chats = World.peds.filter(p => p.state === 'chat').length;
+      if (chats < 12) {
+        const cand = Walk.nodes.filter(n => { const d = dist(n.x, n.z, pp.x, pp.z); return d > Game.viewR * 0.8 && d < Game.viewR + 25 && !Swiss.inLang(n.x, n.z, 2); });
+        if (cand.length) {
+          const n = pick(cand), k = randi(2, 4); const cx = n.x + rand(-1, 1), cz = n.z + rand(-1, 1);
+          for (let i = 0; i < k; i++) { const a = i / k * TAU; const p = spawnPed('civ', cx + Math.cos(a) * 0.8, cz + Math.sin(a) * 0.8); CivAI.init(p); p.setState('chat'); p.chatT = rand(20, 50); p.chatX = cx; p.chatZ = cz; }
+        }
+      }
+    }
+  },
+  spawnTourists(n) {
+    const g = []; const lead = spawnPed('civ', n.x, n.z); lead.keep = true; lead.ai = TouristAI; lead.lead = true; lead.node = Walk.nearest(n.x, n.z); g.push(lead);
+    const flag = new THREE.Group(); flag.add(new THREE.Mesh(vbox(0.05, 1.6, 0.05, 0.8), matCol('#444'))); const f = new THREE.Mesh(vbox(0.05, 0.4, 0.55, 1.5, 0.28), matCol('#e5383b')); flag.add(f); flag.position.set(0.42, 1.4, 0); lead.body.add(flag);
+    for (let i = 0; i < randi(4, 6); i++) { const p = spawnPed('civ', n.x + rand(-2, 2), n.z + rand(-2, 2)); p.keep = true; p.ai = TouristAI; p.leader = lead; p.ox = rand(-1.6, 1.6); p.oz = rand(-2.6, -0.8); g.push(p); }
+    this.tourists = g;
+  }
+};
+const BuskerAI = {
+  update(p, dt) {
+    if (!p.alive) return; p.steer(0, 0, 0, dt);
+    if (p.state === 'scared') { p.ai = CivAI; CivAI.init(p); CivAI.panic(p, Game.player.x, Game.player.z, 2); return; }
+    p.mt = (p.mt || 0) - dt;
+    if (p.mt <= 0) {
+      p.mt = 2.6; const d = dist(p.x, p.z, Game.camTarget.x, Game.camTarget.z);
+      if (d < 35 && Sfx.ctx && Sfx.on) { const t = Sfx.ctx.currentTime, v = Sfx.vol(d) * 0.6; const mel = pick([[98, 147, 196, 147], [98, 131, 165, 196], [147, 196, 165, 131]]); mel.forEach((f, i) => Sfx.tone(t + i * 0.6, 0.65, 0.09 * v, f, f * 0.995, 'sawtooth')); }
+    }
+  }
+};
+const TouristAI = {
+  update(p, dt) {
+    if (!p.alive) return;
+    if (p.state === 'scared') { p.keep = false; p.ai = CivAI; CivAI.init(p); CivAI.panic(p, p.threatX || p.x, p.threatZ || p.z, 2); return; }
+    if (p.lead) {
+      const n = Walk.nodes[p.node]; const dx = n.x - p.x, dz = n.z - p.z;
+      if (p.waitT > 0) { p.waitT -= dt; p.steer(0, 0, 0, dt); return; }
+      if (dx * dx + dz * dz < 0.6) { const o = n.nb.filter(k => k !== p.prev); p.prev = p.node; p.node = o.length ? pick(o) : pick(n.nb); if (chance(0.35)) p.waitT = rand(4, 8); }
+      p.steer(dx, dz, 1.0, dt); p.armL.rotation.x = -2.6; return;
+    }
+    const L = p.leader; if (!L || L.removed || !L.alive || L.ai !== TouristAI) { p.keep = false; p.ai = CivAI; CivAI.init(p); return; }
+    const fx = L.fx, fz = L.fz; const tx = L.x + fz * p.ox + fx * p.oz, tz = L.z - fx * p.ox + fz * p.oz;
+    const dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz);
+    p.steer(dx, dz, d > 0.5 ? clamp(d * 1.3, 0.8, 3) : 0, dt);
+    if (L.waitT > 0 && chance(dt * 0.5)) { FX.add.emit({ x: p.x + p.fx * 0.4, y: 1.6, z: p.z + p.fz * 0.4, life: 0.12, size: 1.2, size1: 0.3, c0: [1, 1, 1, 1], c1: [1, 1, 1, 0] }); p.armR.rotation.x = -1.6; }
+  }
+};
+
+// ---------------- Decor: cafés, bikes, advertising columns, fountains ----------------
+const Decor = {
+  init(scene) {
+    const cafes = [], bikes = [], cols = [], fountains = [];
+    for (let bz = 0; bz < 7; bz++) for (let bx = 0; bx < 7; bx++) {
+      const t = W.blockAt(bx, bz); if (!t || t === 'R') continue; const r = W.blockRect(bx, bz);
+      if ('ANGX'.includes(t)) for (let k = 0; k < 3; k++) cafes.push([r.x0 + 6 + k * 3.2, r.z1 - 2.2]);
+      if ('CKBW'.includes(t)) for (let k = 0; k < 5; k++) bikes.push([r.x1 - 2.2, r.z0 + 8 + k * 0.7]);
+      if ((bx + bz) % 2 === 0) cols.push([r.x1 - 0.9, r.z1 - 3.5]);
+      if ((bx * 3 + bz) % 4 === 1 && t !== 'P') fountains.push([r.x0 + 4.2, r.z0 + 0.9]);
+    }
+    const m4 = new THREE.Matrix4();
+    const place = (geo, mat, list, fn) => { const im = new THREE.InstancedMesh(geo, mat, list.length); list.forEach((p, i) => { m4.makeRotationY(fn ? fn(i) : 0); m4.setPosition(p[0], 0.15, p[1]); im.setMatrixAt(i, m4); }); im.castShadow = true; scene.add(im); return im; };
+    // café: table + 2 chairs + red/white umbrella
+    place(mergeGeos([new THREE.CylinderGeometry(0.4, 0.4, 0.06, 8).translate(0, 0.75, 0), new THREE.CylinderGeometry(0.05, 0.05, 0.75, 4).translate(0, 0.375, 0), vbox(0.4, 0.06, 0.4, 0.45, 0.6), vbox(0.4, 0.5, 0.06, 0.7, 0.8), vbox(0.4, 0.06, 0.4, 0.45, -0.6), vbox(0.4, 0.5, 0.06, 0.7, -0.8), new THREE.CylinderGeometry(0.03, 0.03, 1.6, 4).translate(0, 1.5, 0)]), matCol('#e8e4dc'), cafes);
+    const umb = place(new THREE.ConeGeometry(0.85, 0.35, 8).translate(0, 2.05, 0), new THREE.MeshLambertMaterial({ color: '#ffffff' }), cafes);
+    cafes.forEach((c, i) => umb.setColorAt(i, new THREE.Color(i % 2 ? '#e5383b' : '#f4efe5'))); umb.instanceColor.needsUpdate = true;
+    // parked bicycles
+    const bk = place(mergeGeos([vbox(0.06, 0.55, 0.55, 0.3, 0.45), vbox(0.06, 0.55, 0.55, 0.3, -0.45), vbox(0.05, 0.08, 0.9, 0.62), vbox(0.3, 0.05, 0.05, 0.85, 0.45)]), new THREE.MeshLambertMaterial({ color: '#ffffff' }), bikes, () => Math.PI / 2);
+    bikes.forEach((b, i) => bk.setColorAt(i, new THREE.Color(pick(['#e74c3c', '#2e86de', '#111', '#27ae60', '#f1c40f', '#8e44ad'])))); bk.instanceColor.needsUpdate = true;
+    // advertising columns
+    const ct = canvasTex(64, 32, (g, w, h) => { const c = ['#e5383b', '#f6d66f', '#2e86de', '#27ae60', '#ff7ac8', '#f4efe5']; for (let i = 0; i < 6; i++) { g.fillStyle = c[i]; g.fillRect(i * 11, 0, 11, h); g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(i * 11 + 2, 6 + (i % 3) * 4, 7, 2); } });
+    place(new THREE.CylinderGeometry(0.55, 0.55, 2.4, 10).translate(0, 1.2, 0), new THREE.MeshLambertMaterial({ map: ct }), cols);
+    place(new THREE.CylinderGeometry(0.62, 0.55, 0.3, 10).translate(0, 2.55, 0), matCol('#2a4a3a'), cols);
+    for (const c of cols) Collide.add(c[0] - 0.5, c[1] - 0.5, c[0] + 0.5, c[1] + 0.5, 'prop');
+    // Zürich fountains (stone trough + column)
+    place(mergeGeos([vbox(1.8, 0.6, 0.8, 0.3), vbox(0.25, 1.5, 0.25, 0.75, -0.3), vbox(0.08, 0.08, 0.4, 1.25, -0.1)]), matCol('#9a948a'), fountains);
+    place(vbox(1.6, 0.05, 0.6, 0.56), new THREE.MeshLambertMaterial({ color: '#4a9ac8', emissive: '#1a4a6a', emissiveIntensity: 0.3 }), fountains);
+    for (const f of fountains) Collide.add(f[0] - 0.9, f[1] - 0.4, f[0] + 0.9, f[1] + 0.4, 'prop');
+    this.fountains = fountains;
+  },
+  update(dt) { for (const f of this.fountains || []) if (chance(dt * 3) && dist(f[0], f[1], Game.camTarget.x, Game.camTarget.z) < 30) FX.water(f[0] + 0.1, 1.3, f[1] - 0.1, 0, 0.6, 1.2); }
+};
+// ---------------- weapon icon for alphorn drop etc. already exist ----------------
+
+if (/debug/.test(location.search)) window.__G = { Game, World, Police, Missions, Combat, Population, EventBus, Fires, Props, Emergency, Sky, Weather, Places, Roads, spawnVehicle, spawnPed, Input, Pickups, WEAPONS, Score, WorldEvents, GameOver, Special, Swiss, Jobs, Fun, Shops2, Shop };
 
 })();
 </script>
