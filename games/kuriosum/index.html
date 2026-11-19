@@ -2062,13 +2062,13 @@ function topBar(id) {
 }
 function showMap() {
   cb = null; save(); show('s-map'); Mus.play('menu'); topBar('#mapBar'); GFX.show(null); GFX.setInst(.1); GFX.setFracture(false); setActLook(actOf());
-  const RH = 80, H = (ROWS + 1) * RH + 80, box = $('#mapIn'); box.style.height = H + 'px'; const X = c => 22 + c * 28, Y = r => H - 58 - r * RH; let svg = '', html = '';
+  const RH = 80, H = (ROWS + 1) * RH + 80, box = $('#mapIn'); box.style.height = H + 'px'; const X = c => 22 + c * 28, Y = r => 78 + r * RH; let svg = '', html = '';
   run.map.forEach(row => row.forEach(n => { if (!n) return; n.next.forEach(nc => { const on = n.done && run.pos && run.pos.r === n.r && run.pos.c === n.c; svg += `<line x1="${X(n.c)}%" y1="${Y(n.r)}" x2="${X(nc)}%" y2="${Y(n.r + 1)}" stroke="${on ? COL.Y : n.done ? COL.W : '#4a3a3a'}" stroke-width="${on ? 3 : 1.5}" stroke-dasharray="${on ? '' : '3 7'}"/>`; });
     const here = run.pos && run.pos.r === n.r && run.pos.c === n.c;
     html += `<button class="node ${n.type} ${n.done ? 'done' : ''} ${avail(n) ? 'av' : ''} ${here ? 'here' : ''}" data-r="${n.r}" data-c="${n.c}" style="left:${X(n.c)}%;top:${Y(n.r)}px;--nc:${NCOL[n.type]}" aria-label="${NODE[n.type][0]}"><img alt="" src="${Art.draw(NODE[n.type][1], NCOL[n.type], 96, 96)}"></button><span class="nlab" style="left:${X(n.c)}%;top:${Y(n.r) + (n.type === 'boss' ? 14 : 0)}px">${n.type === 'boss' ? (ENEMIES[run.boss].final ? '???' : ENEMIES[run.boss].n) : NODE[n.type][0]}</span>`; }));
-  const A = ACTS[actOf() - 1]; box.innerHTML = `<svg>${svg}</svg>${html}<div class="actlab" style="top:${H - 16}px">Ebene ${A.r} · ${A.n}</div>`;
+  const A = ACTS[actOf() - 1]; box.innerHTML = `<svg>${svg}</svg>${html}<div class="actlab" style="top:18px">Ebene ${A.r} · ${A.n}</div>`;
   box.querySelectorAll('.node.av').forEach(b => b.onclick = () => { Sfx.init(); Sfx.play('click'); enterNode(run.map[+b.dataset.r][+b.dataset.c]); });
-  const sc = $('#mapScroll'), cr = run.pos ? run.pos.r + 1 : 0; sc.scrollTop = Y(cr) - sc.clientHeight * .6;
+  const sc = $('#mapScroll'), cr = run.pos ? run.pos.r + 1 : 0; sc.scrollTop = Y(cr) - sc.clientHeight * .4;
 }
 function enterNode(n) {
   n.done = true; run.pos = { r: n.r, c: n.c }; meta.stats.best = Math.max(meta.stats.best, depthOf(n.r));
