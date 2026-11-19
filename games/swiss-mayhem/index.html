@@ -2192,7 +2192,7 @@ const Pickups = {
     const spots = [
       ['knife', 2, 2], ['hockey', 4, 2], ['revolver', 6, 3], ['taser', 1, 4], ['crossbow', 5, 4], ['doublebarrel', 0, 3], ['minigun', 6, 0], ['sniper', 2, 0],
       ['flamer', 0, 4], ['molotov', 4, 3], ['mine', 1, 6], ['gl', 5, 0], ['lightning', 2, 5], ['alphorn', 6, 5], ['cheese', 4, 5],
-      ['pistol', 2, 3], ['bat', 5, 1], ['smg', 0, 1], ['shotgun', 6, 4], ['rifle', 1, 0], ['rocket', 4, 6], ['grenade', 2, 6], ['health', 5, 3], ['health', 1, 3], ['armor', 6, 2], ['armor', 0, 5], ['smg', 5, 5], ['pistol', 6, 6], ['grenade', 4, 1],
+      ['pistol', 2, 3], ['bat', 5, 1], ['smg', 0, 1], ['shotgun', 6, 4], ['rifle', 1, 0], ['rocket', 4, 6], ['grenade', 2, 6], ['health', 5, 3], ['health', 1, 3], ['health', 0, 0], ['health', 3 + 0, 0], ['health', 6, 1], ['health', 4, 4], ['health', 2, 5], ['health', 6, 6], ['health', 0, 6], ['health', 5, 2], ['health', 1, 1], ['health', 3 + 1, 6], ['armor', 2, 4], ['armor', 5, 5], ['armor', 6, 2], ['armor', 0, 5], ['smg', 5, 5], ['pistol', 6, 6], ['grenade', 4, 1],
     ];
     for (const [t, bx, bz] of spots) { const r = W.blockRect(bx, bz); this.add(t, r.x0 + 1.5, r.z0 + rand(5, 25), true); }
   },
@@ -2200,6 +2200,10 @@ const Pickups = {
     const col = { health: '#ff3b3b', armor: '#3b8bff', cash: '#3bd16f' }[type] || '#f6d66f';
     const m = new THREE.Mesh(this.geo, new THREE.MeshLambertMaterial({ color: col, emissive: col, emissiveIntensity: 0.5 }));
     m.position.set(x, 0.9, z); m.castShadow = true; this.scene.add(m);
+    if (type === 'health') { m.scale.setScalar(1.25); // white cross on red box (first aid)
+      const wm = new THREE.MeshBasicMaterial({ color: '#ffffff' });
+      for (const s of [1, -1]) { const a = new THREE.Mesh(vbox(0.46, 0.14, 0.02, 0, s * 0.36), wm), b = new THREE.Mesh(vbox(0.14, 0.46, 0.02, 0, s * 0.36), wm); m.add(a, b); const c = new THREE.Mesh(vbox(0.02, 0.14, 0.46, 0), wm), d = new THREE.Mesh(vbox(0.02, 0.46, 0.14, 0), wm); c.position.x = d.position.x = s * 0.36; m.add(c, d); }
+    }
     if (type in WEAPONS) { const icon = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.66), new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load(weaponIconURL(type)), transparent: true })); icon.position.y = 0.9; icon.rotation.y = Math.PI / 4; icon.rotation.x = -0.6; m.add(icon); m.material.color.set('#2a2140'); m.material.emissive.set('#e3bc48'); m.material.emissiveIntensity = 0.25; }
     const p = { type, x, z, respawn, amount, mesh: m, active: true, t: 0 };
     this.list.push(p); return p;
@@ -3201,6 +3205,7 @@ const Game = {
         Score.add(p.kind === 'swat' ? 500 : cop ? 300 : p.kind === 'cow' ? 50 : p.kind === 'gang' ? 400 : p.kind === 'thug' ? 250 : 100, true);
         Crime.commit(cop ? 'kill_cop' : 'kill', p.x, p.z, p);
         if (cop) { if (chance(0.7)) Pickups.add(p.kind === 'swat' ? 'smg' : 'pistol', p.x, p.z, false, p.kind === 'swat' ? 30 : 12); }
+        if ((p.kind === 'thug' || p.kind === 'gang' || cop) && chance(0.3)) Pickups.add('health', p.x + rand(-0.6, 0.6), p.z + rand(-0.6, 0.6), false);
         else if (chance(0.6)) Pickups.add('cash', p.x + rand(-0.5, 0.5), p.z + rand(-0.5, 0.5), false, randi(2, 12) * 10);
       }
     } else if (e.type === 'VEHICLE_DESTROYED') {
