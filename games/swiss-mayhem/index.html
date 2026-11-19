@@ -8,6 +8,7 @@
 <style>
 :root{--night:#120b20;--deep:#0b0712;--violet:#7656b3;--violet2:#a98cd6;--gold:#e3bc48;--gold2:#f6d66f;--mint:#76d8c5;--paper:#f4efe5;--ink:#171022;--red:#e5383b;}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 html,body{margin:0;height:100%;overflow:hidden;background:#000;color:var(--paper);font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;touch-action:none}
 #game{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;display:block}
 .hidden{display:none!important}
@@ -57,8 +58,22 @@ input.name{font:900 22px ui-monospace,monospace;text-transform:uppercase;padding
 #bPause{right:150px;top:10px;width:38px;height:38px;border-radius:8px;font-size:16px;pointer-events:auto}
 .touchmode #weapon{right:200px}
 /* ---------- Screens ---------- */
-.screen{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 40%,rgba(42,26,74,.55) 0%,rgba(18,11,32,.82) 60%,rgba(5,3,8,.95) 100%);overflow:auto}
-.panel{max-width:760px;width:92%;text-align:center;padding:18px}
+.screen{position:fixed;inset:0;z-index:20;display:flex;touch-action:pan-y;-webkit-overflow-scrolling:touch;background:radial-gradient(ellipse at 50% 40%,rgba(42,26,74,.55) 0%,rgba(18,11,32,.82) 60%,rgba(5,3,8,.95) 100%);overflow:auto}
+.panel{max-width:760px;width:92%;text-align:center;padding:18px;margin:auto}
+.card{touch-action:pan-y;-webkit-overflow-scrolling:touch}
+.tcol{min-width:0}
+#zone{position:absolute;left:14px;bottom:14px;font-size:26px;font-weight:900;color:#fff;letter-spacing:2px;opacity:0;transition:opacity .5s}
+#zone small{display:block;font-size:12px;color:#f6d66f;letter-spacing:1px}
+@media (max-height:540px){
+  .panel{padding:10px}
+  .title-panel{max-width:1000px;display:grid;grid-template-columns:1fr 1.15fr;gap:18px;align-items:center}
+  .logo{font-size:44px!important}
+  .sub{margin:8px 0 2px;font-size:12px}.tag{font-size:11px;margin-bottom:10px}
+  .btn{padding:9px 18px;font-size:14px}
+  .help{font-size:11px;line-height:1.45;margin-top:8px;padding:8px 10px}
+  #goScore{font-size:32px!important}
+  #zone{font-size:20px;bottom:auto;top:150px}
+}
 .logo{font-size:min(13vw,92px);font-weight:900;line-height:.9;letter-spacing:2px;color:#fff;text-shadow:4px 4px 0 var(--red),8px 8px 0 #000}
 .logo .cross{display:inline-block;width:.62em;height:.62em;background:var(--red);position:relative;vertical-align:middle;margin-right:.12em;box-shadow:4px 4px 0 #000}
 .logo .cross:before,.logo .cross:after{content:"";position:absolute;background:#fff;left:50%;top:50%;transform:translate(-50%,-50%)}
@@ -103,6 +118,7 @@ input.name{font:900 22px ui-monospace,monospace;text-transform:uppercase;padding
   <div id="prompt" class="px"></div>
   <div id="arrow" class="hidden"></div>
   <div id="fps"></div>
+  <div id="zone" class="px"></div>
 </div>
 
 <div id="touch" class="hidden">
@@ -115,16 +131,20 @@ input.name{font:900 22px ui-monospace,monospace;text-transform:uppercase;padding
 </div>
 
 <div id="title" class="screen">
-  <div class="panel">
-    <div class="logo"><span class="cross"></span>SWISS<br>MAYHEM</div>
-    <div class="sub">ZÜRICH · VERTICAL SLICE</div>
-    <div class="tag">“Switzerland has never seen this much chaos.”</div>
-    <div>
-      <span class="btn" id="btnStart">NEUES SPIEL</span>
-      <span class="btn alt hidden" id="btnContinue">WEITERSPIELEN</span>
+  <div class="panel title-panel">
+    <div class="tcol">
+      <div class="logo"><span class="cross"></span>SWISS<br>MAYHEM</div>
+      <div class="sub">ZÜRICH · VERTICAL SLICE</div>
+      <div class="tag">“Switzerland has never seen this much chaos.”</div>
+      <div>
+        <span class="btn" id="btnStart">NEUES SPIEL</span>
+        <span class="btn alt hidden" id="btnContinue">WEITERSPIELEN</span>
+      </div>
     </div>
-    <div class="help" id="helpText"></div>
-    <div class="help" id="hiscoreTitle"></div>
+    <div class="tcol">
+      <div class="help" id="helpText"></div>
+      <div class="help" id="hiscoreTitle"></div>
+    </div>
   </div>
 </div>
 
@@ -243,7 +263,8 @@ const Input = {
         if (sticks.R && t.identifier === sticks.R.id) { upd(sticks.R, t); setStick(R, sticks.R); }
       }
       self.syncSticks(sticks);
-      e.preventDefault();
+      const tg = e.target; const inUI = tg && tg.closest && (tg.closest('.card') || tg.closest('.screen'));
+      if (!inUI || sticks.L || sticks.R) e.preventDefault();
     };
     const onEnd = e => {
       for (const t of e.changedTouches) {
@@ -422,8 +443,8 @@ const W = {
 W.DIST = [
   'IIHRNNS',
   'ILCRNAW',
-  'ICCRAAW',
-  'FCCRAPW',
+  'IXXRAAW',
+  'FXXRAPW',
   'CBKRGAW',
   'CCKRAAP',
   'DCCRQWP'];
@@ -504,6 +525,13 @@ function makeTextures() {
   TEX.glow = canvasTex(64, 64, (g, w, h) => { const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.4, 'rgba(255,255,255,.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); }, false);
   TEX.glow.minFilter = THREE.LinearFilter; TEX.glow.magFilter = THREE.LinearFilter;
   TEX.smoke = canvasTex(32, 32, (g, w, h) => { for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(255,255,255,${rand(0.05, 0.2)})`; const r = rand(3, 9); g.beginPath(); g.arc(16 + rand(-7, 7), 16 + rand(-7, 7), r, 0, TAU); g.fill(); } }, false);
+}
+function graffitiTex() {
+  return canvasTex(64, 32, (g) => {
+    const cols = ['#ff4fa8', '#5af0ff', '#ffd25a', '#5affa0', '#ff7a3a', '#c86bff'];
+    for (let i = 0; i < 3; i++) { g.strokeStyle = pick(cols); g.lineWidth = randi(2, 4); g.beginPath(); g.moveTo(rand(4, 20), rand(6, 26)); for (let k = 0; k < 4; k++) g.quadraticCurveTo(rand(0, 64), rand(0, 32), rand(10, 60), rand(6, 26)); g.stroke(); }
+    g.fillStyle = pick(cols); g.font = 'bold 13px monospace'; g.fillText(pick(['ZH', 'K4', 'FCZ', 'GC', 'OI!', 'XXX', '8004']), randi(4, 30), randi(14, 28));
+  }, false);
 }
 function signTex(text, bg, fg, w = 128, h = 32) {
   return canvasTex(w, h, (g) => {
@@ -896,6 +924,16 @@ function buildWorld(scene) {
       case 'N': ring(r, 8, 4, 7, 7, 10, 'old', facadeCols.N, 0.6, 0.1);
         sign('BAR', '#200818', '#ff5ab0', r.x0 + 8, 4, r.z1 - 2.95, 0, 3, 1.2); sign('CLUB', '#081820', '#5af0ff', r.x1 - 2.95, 4.5, r.cz, Math.PI / 2, 4, 1.4);
         sign('KEBAB', '#201808', '#ffd25a', r.x0 + 2.95, 3.5, r.cz - 6, -Math.PI / 2, 4, 1.2); break;
+      case 'X': { // Langstrasse: dense, grimy, neon
+        ring(r, 8, 4, 6, 7, 11, 'old', ['#7a6a72', '#5e5a6a', '#8a6a5a', '#6a5a52', '#9a8a7a', '#5a6a6a'], 0.2, 0.05);
+        const face = bx === 1 ? r.x1 - 2.95 : r.x0 + 2.95, rot = bx === 1 ? Math.PI / 2 : -Math.PI / 2;
+        const neon = [['BAR', '#ff4fa8'], ['KEBAB', '#ffd25a'], ['KIOSK 24/7', '#5af0ff'], ['LIVE', '#ff5a3a'], ['SPIELSALON', '#c86bff'], ['HOTEL', '#ff4fa8'], ['PIZZA', '#ffb03a'], ['CLUB', '#5affa0']];
+        for (let k = 0; k < 4; k++) { const [t, c] = neon[(bx * 4 + bz * 3 + k) % neon.length]; sign(t, '#120814', c, face, 3.2 + (k % 2) * 1.6, r.z0 + 5 + k * 6.5, rot, t.length > 5 ? 4.5 : 3, 1.1); }
+        sign('BAR', '#120814', '#ff4fa8', r.x0 + 8 + bx * 6, 3.6, r.z1 - 2.95, 0, 3, 1.1);
+        // graffiti
+        for (let k = 0; k < 3; k++) { const gm = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.3), new THREE.MeshBasicMaterial({ map: graffitiTex(), transparent: true })); gm.position.set(face + (bx === 1 ? 0.02 : -0.02), 1.0, r.z0 + 7 + k * 8); gm.rotation.y = rot; root.add(gm); }
+        break;
+      }
       case 'W': {
         const n = randi(2, 3);
         for (let k = 0; k < n; k++) { const zz = r.z0 + 4 + k * (24 / n); building(r.x0 + 4, zz, r.x1 - 10, zz + 24 / n - 4, rand(10, 16), 'city', pick(facadeCols.W), false); }
@@ -998,12 +1036,15 @@ function buildWorld(scene) {
   // Places that are on sidewalks / misc
   Places.phones = [
     { x: W.blockRect(4, 0).x0 + 1.2, z: W.blockRect(4, 0).cz, mission: 0 },
-    { x: W.blockRect(2, 2).x1 - 1.2, z: W.blockRect(2, 2).cz, mission: 1 },
+    { x: W.blockRect(2, 4).x1 - 1.2, z: W.blockRect(2, 4).cz, mission: 1 },
     { x: W.blockRect(1, 5).cx, z: W.blockRect(1, 5).z0 + 1.2, mission: 2 },
   ];
   const ar = W.blockRect(5, 2); Places.pharmacy = { x: ar.x1 - 1.5, z: ar.cz };
   sign('APOTHEKE', '#0a6a3a', '#ffffff', ar.x1 - 2.9, 4, ar.cz, Math.PI / 2, 6, 1.4);
-  Places.spawn = { x: W.blockRect(2, 3).x0 + 1.5, z: W.blockRect(2, 3).cz };
+  Places.spawn = { x: W.blockRect(1, 5).x1 - 1.5, z: W.blockRect(1, 5).cz };
+  // Langstrasse: street signs on the road x = W.c(2)
+  for (const z of [W.c(2) + 20, W.c(3) + 20]) { sign('LANGSTRASSE', '#1a4fa0', '#ffffff', W.c(2) - 6.4, 3, z, -Math.PI / 2, 5, 0.9); sign('LANGSTRASSE', '#1a4fa0', '#ffffff', W.c(2) + 6.4, 3, z + 6, Math.PI / 2, 5, 0.9); }
+  Places.langstrasse = { x0: W.c(1) + 6, z0: W.c(2) + 6, x1: W.c(3) - 6, z1: W.c(4) - 6 };
   W.root = root;
   return root;
 }
@@ -1476,6 +1517,7 @@ const VTYPES = {
   sonder: { name: 'Sondereinheit', len: 5.2, wid: 2.2, hgt: 1.9, cab: 0, max: 27, acc: 14, steer: 2.0, mass: 2.4, hp: 280, cols: ['#1a1a1a'], siren: 'police', stripe: '#3a3a3a' },
   feuerwehr: { name: 'Feuerwehr', len: 7.5, wid: 2.5, hgt: 2.5, cab: 0, max: 22, acc: 9, steer: 1.6, mass: 3.5, hp: 350, cols: ['#d0201a'], siren: 'fire', stripe: '#f0f0f0' },
   ambulanz: { name: 'Ambulanz', len: 5.6, wid: 2.2, hgt: 2.1, cab: 0, max: 26, acc: 12, steer: 2.0, mass: 2, hp: 200, cols: ['#f4f4f4'], siren: 'medic', stripe: '#2ecc40' },
+  traktor: { name: 'Traktor', len: 3.8, wid: 1.9, hgt: 1.6, tractor: true, max: 12, acc: 6, steer: 2.0, mass: 2.6, hp: 220, cols: ['#2e8b3a', '#c0392b', '#2e8b3a'] },
   tram: { name: 'Tram', len: 16, wid: 2.6, hgt: 2.8, cab: 0, max: 10, acc: 4, steer: 0, mass: 12, hp: 99999, cols: ['#1f5fbf'], tram: true },
 };
 const CIVIL_TYPES = ['kleinwagen', 'kleinwagen', 'limousine', 'limousine', 'sport', 'suv', 'suv', 'liefer', 'lastwagen', 'toeffli', 'motorrad', 'kleinwagen'];
@@ -1507,6 +1549,14 @@ class Vehicle {
       const w1 = new THREE.Mesh(vbox(0.18, 0.6, 0.6, 0.3, T.len * 0.36), tire), w2 = new THREE.Mesh(vbox(0.18, 0.6, 0.6, 0.3, -T.len * 0.36), tire); g.add(w1, w2);
       const hb = new THREE.Mesh(vbox(0.7, 0.08, 0.08, 1.0, T.len * 0.3), dark); g.add(hb);
       const seat = new THREE.Mesh(vbox(0.3, 0.12, 0.6, 0.78, -0.2), dark); g.add(seat);
+    } else if (T.tractor) {
+      g.add(new THREE.Mesh(vbox(1.0, 0.8, 1.9, 1.0, 0.8), this.bodyMat));
+      g.add(new THREE.Mesh(vbox(1.3, 0.25, 1.4, 0.75, -0.8), this.bodyMat));
+      g.add(new THREE.Mesh(vbox(1.2, 1.1, 1.1, 1.75, -0.7), glass));
+      g.add(new THREE.Mesh(vbox(1.3, 0.12, 1.25, 2.35, -0.7), this.bodyMat));
+      g.add(new THREE.Mesh(vbox(0.12, 0.7, 0.12, 2.0, 1.4), dark));
+      for (const sx of [-1, 1]) { const rw = new THREE.Mesh(vbox(0.45, 1.5, 1.5, 0.75, -0.9), tire); rw.position.x = sx * 0.95; g.add(rw); const fw = new THREE.Mesh(vbox(0.3, 0.8, 0.8, 0.4, 1.3), tire); fw.position.x = sx * 0.75; g.add(fw); }
+      this.headMat = new THREE.MeshBasicMaterial({ color: '#fff3c0' }); const hl = new THREE.Mesh(vbox(0.6, 0.15, 0.06, 1.1, 1.77), this.headMat); g.add(hl);
     } else if (T.tram) {
       const body = new THREE.Mesh(vbox(T.wid, 2.2, T.len, 1.4), this.bodyMat); g.add(body);
       const stripe = new THREE.Mesh(vbox(T.wid + 0.02, 0.9, T.len - 1, 1.9), matCol('#e8eef5')); g.add(stripe);
@@ -1812,11 +1862,12 @@ const Combat = {
     Sfx.play(W.sfx || 'swing', dist(attacker.x, attacker.z, Game.camTarget.x, Game.camTarget.z));
     for (const p of World.peds) {
       if (p === attacker || !p.alive || p.vehicle) continue;
+      if ((attacker.thug || attacker.demoAngry) && p !== Game.player) continue;
       const dx = p.x - attacker.x, dz = p.z - attacker.z, d = Math.hypot(dx, dz);
       if (d > W.range + p.r || d < 0.01) continue;
       if ((dx * fx + dz * fz) / d < 0.45) continue;
       const kn = W.knock || (wid === 'bat' ? 7 : 3);
-      p.damage(W.dmg * rand(0.85, 1.15), attacker, 'melee', fx * kn, fz * kn);
+      p.damage(W.dmg * rand(0.85, 1.15) * (attacker.thug ? 0.55 : attacker.demoAngry ? 0.7 : 1), attacker, 'melee', fx * kn, fz * kn);
       if (wid === 'bat' || wid === 'hockey') { p.downT = wid === 'hockey' ? 1.4 : 0.8; if (wid === 'hockey') p.vy = 4; }
       hitAny = true; Sfx.play('punch', 0);
       if (attacker === Game.player) Crime.commit(p.kind === 'cop' || p.kind === 'swat' ? 'assault_cop' : 'assault', p.x, p.z);
@@ -2190,7 +2241,7 @@ const CivAI = {
         const t = p.target || P;
         const tx = t.vehicle ? t.vehicle.x : t.x, tz = t.vehicle ? t.vehicle.z : t.z;
         const d = dist(p.x, p.z, tx, tz);
-        if (!t.alive || d > 16 || p.stateT > 12 || t.vehicle) { this.calm(p); break; }
+        if (!t.alive || d > (p.demoAngry ? 35 : 16) || p.stateT > (p.demoAngry ? 25 : 12) || t.vehicle) { this.calm(p); p.demoAngry = false; break; }
         if (d > 1.3) p.steer(tx - p.x, tz - p.z, 4.2, dt);
         else { p.steer(0, 0, 0, dt); p.dir = Math.atan2(tx - p.x, tz - p.z); p.atkT = (p.atkT || 0) - dt; if (p.atkT <= 0) { p.atkT = 0.7; Combat.melee(p, 'fist'); } }
         break;
@@ -2716,10 +2767,28 @@ const GangAI = {
   update(p, dt) {
     if (!p.alive || p.vehicle) return;
     const P = Game.player, pp = playerPos(); const d = dist(p.x, p.z, pp.x, pp.z);
+    if (p.thug && !p.hostile) {
+      const spot = (Swiss.inLang(pp.x, pp.z, 6) && d < 26) || d < 11;
+      if (spot && P.alive && Collide.los(p.x, p.z, pp.x, pp.z)) { p.hostile = true; if (chance(0.5)) HUD.toast(pick(['«Was guckst du?!»', '«Hey du! Komm mal her!»', '«Her mit dem Portemonnaie!»', '«Falsche Strasse, Kollege!»'])); }
+      else {
+        if (p.node === undefined || !Walk.nodes[p.node]) p.node = Walk.nearest(p.x, p.z);
+        const n = Walk.nodes[p.node]; const ex = n.x - p.x, ez = n.z - p.z;
+        if (ex * ex + ez * ez < 0.8) { const o = n.nb.filter(k => Swiss.inLang(Walk.nodes[k].x, Walk.nodes[k].z, 1)); p.node = o.length ? pick(o) : pick(n.nb); if (chance(0.3)) p.idleT = rand(2, 6); }
+        if (p.idleT > 0) { p.idleT -= dt; p.steer(0, 0, 0, dt); } else p.steer(ex, ez, 1.3, dt);
+        p.aiming = false; p.setWeaponVisible(false); return;
+      }
+    }
     if (!p.hostile && d < 15 && canSee(p.x, p.z, pp.x, pp.z, 15)) { p.hostile = true; for (const q of World.peds) if (q.ai === GangAI && dist(q.x, q.z, p.x, p.z) < 20) q.hostile = true; }
     if (!p.hostile || !P.alive) { const gx = p.guardX + Math.sin(GAME_TIME * 0.5 + p.id) * 2, gz = p.guardZ + Math.cos(GAME_TIME * 0.4 + p.id) * 2; p.steer(gx - p.x, gz - p.z, dist(p.x, p.z, gx, gz) > 0.5 ? 1.2 : 0, dt); p.aiming = false; p.setWeaponVisible(false); return; }
-    p.setWeaponVisible(true); p.aiming = true;
+    if (d > 32 && p.thug) { p.hostile = false; return; }
     const dx = pp.x - p.x, dz = pp.z - p.z;
+    if (WEAPONS[p.weapon].melee) {
+      p.setWeaponVisible(false); p.aiming = false;
+      const reach = P.vehicle ? P.vehicle.T.wid / 2 + 1.4 : 1.3;
+      if (d > reach) p.steer(dx, dz, 5.0, dt); else { p.steer(0, 0, 0, dt); p.dir = Math.atan2(dx, dz); p.atkT = (p.atkT || 0) - dt; if (p.atkT <= 0) { p.atkT = 0.75; if (P.vehicle) { P.vehicle.damage(6, p, 'melee'); Sfx.play('crash', 3); } else Combat.melee(p, p.weapon); } }
+      return;
+    }
+    p.setWeaponVisible(true); p.aiming = true;
     if (d > 10) p.steer(dx, dz, 4, dt); else if (d < 5) p.steer(-dx, -dz, 3, dt); else p.steer(-dz, dx, 1.5, dt);
     p.dir = Math.atan2(dx, dz);
     p.shootT -= dt;
@@ -2779,7 +2848,7 @@ const Population = {
     for (const s of this.parkingSpots) this.fillSpot(s);
   },
   fillSpot(s) {
-    const t = s === this.parkingSpots[9] ? 'postauto' : pick(['kleinwagen', 'limousine', 'sport', 'suv', 'liefer', 'motorrad', 'toeffli', 'sport', 'suv']);
+    const t = s === this.parkingSpots[9] ? 'postauto' : s === this.parkingSpots[2] ? 'traktor' : pick(['kleinwagen', 'limousine', 'sport', 'suv', 'liefer', 'motorrad', 'toeffli', 'sport', 'suv']);
     s.v = spawnVehicle(t, s.x, s.z, s.a); s.v.parked = true;
   },
   update(dt) {
@@ -2943,8 +3012,8 @@ const Game = {
   },
   setupUI() {
     const help = IS_TOUCH
-      ? `<b>Linker Daumen</b> laufen / lenken · <b>Rechter Daumen</b> zielen &amp; schiessen<br><b>EINSTEIGEN</b> Fahrzeug klauen · <b>WAFFE</b> wechseln · <b>SPRINT/BREMSE</b> halten (Sprint = Vollgas)<br>Zielen schiesst automatisch · 3 Leben · Chaos-Kombos geben Punkte-Multiplikator<br>Gelbe <b>Telefonzellen</b> = Missionen · Laden, Apotheke &amp; Lackiererei auf der Minimap`
-      : `<b>WASD</b> laufen / fahren · <b>Maus</b> zielen · <b>Linksklick</b> schiessen · <b>Shift</b> sprinten<br><b>F</b> ein-/aussteigen &amp; benutzen · <b>Q/E, 1–8, Mausrad</b> Waffe · <b>Leertaste</b> Handbremse · <b>H</b> Hupe · <b>R</b> nachladen · <b>Esc</b> Pause<br>Gelbe <b>Telefonzellen</b> = Missionen · Waffenladen, Apotheke &amp; Lackiererei auf der Minimap<br>3 Leben · Zufalls-Events · Chaos-Kombos = Punkte-Multiplikator · Highscore am Ende`;
+      ? `<b>Linker Daumen</b> laufen / lenken<br><b>Rechter Daumen</b> zielen = Dauerfeuer<br><b>SPRINT</b> halten = rennen / im Auto bremsen<br><b>EINSTEIGEN</b> Auto klauen · <b>WAFFE</b> wechseln<br><b>Telefonzellen</b> = Missionen · Vorsicht an der <b>Langstrasse</b>!`
+      : `<b>WASD</b> laufen / fahren · <b>Maus</b> zielen · <b>Maustaste halten</b> = Dauerfeuer<br><b>Shift</b> sprinten · <b>Leertaste</b> Handbremse · <b>F</b> ein-/aussteigen &amp; benutzen<br><b>Q/E, 1–8, Mausrad</b> Waffe · <b>H</b> Hupe · <b>R</b> nachladen · <b>Esc</b> Pause<br><b>Telefonzellen</b> = Missionen · 3 Leben · Chaos-Kombos = Multiplikator<br>Vorsicht an der <b>Langstrasse</b>!`;
     $('helpText').innerHTML = help; Title.refresh();
     $('btnEnter').onclick = () => GameOver.submit(); $('btnAgain').onclick = () => GameOver.again();
     $('goName').addEventListener('keydown', e => { if (e.key === 'Enter') GameOver.submit(); });
@@ -2990,7 +3059,7 @@ const Game = {
     for (const v of [...World.vehicles]) { v.remove(this.scene); } World.vehicles.length = 0;
     for (const t of World.trams) this.scene.remove(t.mesh); World.trams.length = 0;
     Combat.clear(); Fires.clear(); Police.reset(); Emergency.units.length = 0; EventBus.reset(); Pickups.clearDrops(); Props.clearBarriers();
-    Missions.reset(); Special.clear(); WorldEvents.reset(); Score.reset(save);
+    Missions.reset(); Special.clear(); Swiss.reset(); WorldEvents.reset(); Score.reset(save);
     // player
     const sp = Places.spawn;
     const P = this.player = new Ped('player', sp.x, sp.z, this.scene);
@@ -3054,7 +3123,7 @@ const Game = {
       if (from === P) {
         const cop = p.kind === 'cop' || p.kind === 'swat';
         this.stats.kills++; if (cop) this.stats.copKills++;
-        Score.add(p.kind === 'swat' ? 500 : cop ? 300 : p.kind === 'cow' ? 50 : p.kind === 'gang' ? 400 : 100, true);
+        Score.add(p.kind === 'swat' ? 500 : cop ? 300 : p.kind === 'cow' ? 50 : p.kind === 'gang' ? 400 : p.kind === 'thug' ? 250 : 100, true);
         Crime.commit(cop ? 'kill_cop' : 'kill', p.x, p.z, p);
         if (cop) { if (chance(0.7)) Pickups.add(p.kind === 'swat' ? 'smg' : 'pistol', p.x, p.z, false, p.kind === 'swat' ? 30 : 12); }
         else if (chance(0.6)) Pickups.add('cash', p.x + rand(-0.5, 0.5), p.z + rand(-0.5, 0.5), false, randi(2, 12) * 10);
@@ -3202,8 +3271,7 @@ const Game = {
         let dx = 0, dz = 0, fire = false;
         if (Input.aimMag > 0.25) { const wd = this.screenToWorldDir(Input.aimX, Input.aimY); const l = Math.hypot(wd.x, wd.z); dx = wd.x / l; dz = wd.z / l; fire = true; const aa = this.autoAim({ x: v.x, z: v.z }, dx, dz, W.range); if (aa) { dx = aa.x; dz = aa.z; } }
         else if (useMouse && Input.mouse.down) { const mw = this.mouseWorld(); if (mw) { const ex = mw.x - v.x, ez = mw.z - v.z, l = Math.hypot(ex, ez) || 1; dx = ex / l; dz = ez / l; fire = true; } }
-        if (fire && (W.auto || !P._heldFire)) this.tryFire(P, dx, dz);
-        P._heldFire = fire;
+        if (fire) this.tryFire(P, dx, dz); // hold = continuous fire for every weapon
       }
       P.x = v.x; P.z = v.z;
       // bike rider pose
@@ -3240,8 +3308,7 @@ const Game = {
     else if (ml > 0.15) P.dir += angDiff(P.dir, Math.atan2(mv.x, mv.z)) * Math.min(1, dt * 14);
     P.aiming = !W.melee && (aimX !== null || fire);
     P.setWeaponVisible(!W.melee && W.proj !== 'grenade');
-    if (fire) { const dx = aimX !== null ? aimX : P.fx, dz = aimZ !== null ? aimZ : P.fz; if (W.auto || W.melee || !P._heldFire) this.tryFire(P, dx, dz, throwD); }
-    P._heldFire = fire && !W.auto;
+    if (fire) { const dx = aimX !== null ? aimX : P.fx, dz = aimZ !== null ? aimZ : P.fz; this.tryFire(P, dx, dz, throwD); } // hold = continuous fire
     if (P.punchT > 0) { P.punchT -= dt; P.armR.rotation.x = -Math.PI / 2 * (P.punchT / 0.2) * 1.2; }
     // busted?
     if (P.bustT > 1.6) this.busted();
@@ -3316,7 +3383,7 @@ const Game = {
     Combat.update(dt); Special.update(dt); Score.update(dt); WorldEvents.update(dt); Fires.update(dt); Props.update(dt); Pickups.update(dt, P);
     Police.update(dt); Emergency.update(dt); Missions.update(dt); Interact.update(dt); Phones.update(dt);
     EventBus.update();
-    Population.update(dt);
+    Population.update(dt); Swiss.update(dt);
     if (P.vehicle && !P.vehicle.alive) { const v = P.vehicle; exitVehicle(P); }
     if (Police.level > this.stats.maxWanted) this.stats.maxWanted = Police.level;
     // end states
@@ -3590,7 +3657,7 @@ const MiniMap = {
     g.fillStyle = '#2b6f9a'; g.fillRect(X(132), X(-60), 30 / S, 370 / S); g.fillRect(0, X(306), c.width, c.height);
     for (let bz = 0; bz < 7; bz++) for (let bx = 0; bx < 7; bx++) {
       const t = W.blockAt(bx, bz); if (t === 'R') continue; const r = W.blockRect(bx, bz);
-      g.fillStyle = t === 'P' ? '#4f8a3c' : t === 'I' || t === 'L' ? '#7a5a4a' : t === 'K' ? '#6a8aa0' : t === 'A' || t === 'G' || t === 'N' ? '#8a6a5a' : '#7a7a80';
+      g.fillStyle = t === 'X' ? '#6a3a5a' : t === 'P' ? '#4f8a3c' : t === 'I' || t === 'L' ? '#7a5a4a' : t === 'K' ? '#6a8aa0' : t === 'A' || t === 'G' || t === 'N' ? '#8a6a5a' : '#7a7a80';
       g.fillRect(X(r.x0), X(r.z0), 30 / S, 30 / S);
     }
     g.fillStyle = '#c8c8c8';
@@ -3614,6 +3681,7 @@ const MiniMap = {
     for (const v of World.vehicles) if (v.isPolice && v.alive && v.sirenOn) dot(v.x, v.z, blink ? '#3a7aff' : '#ff3a3a', 4);
     for (const p of World.peds) if ((p.kind === 'cop' || p.kind === 'swat') && p.alive && !p.vehicle && Police.level > 0) dot(p.x, p.z, '#7ab0ff', 3);
     if (Police.heli) dot(Police.heli.x, Police.heli.z, '#ffffff', 5);
+    for (const p of World.peds) { if (!p.alive || p.vehicle) continue; if (p.demo) dot(p.x, p.z, '#ff9a3a', 3); else if (p.thug && p.hostile) dot(p.x, p.z, '#ff2a2a', 3); }
     if (Markers.target) { const t = Markers.target; const dx = t.x - pp.x, dz = t.z - pp.z, d = Math.hypot(dx, dz); const R = 58 / zoom; const k = d > R ? R / d : 1; dot(pp.x + dx * k, pp.z + dz * k, '#f6d66f', 7); }
     g.restore();
     // player arrow (screen-relative)
@@ -3993,7 +4061,242 @@ const WorldEvents = {
   }
 };
 
-if (/debug/.test(location.search)) window.__G = { Game, World, Police, Missions, Combat, Population, EventBus, Fires, Props, Emergency, Sky, Weather, Places, Roads, spawnVehicle, spawnPed, Input, Pickups, WEAPONS, Score, WorldEvents, GameOver, Special };
+
+// ======================================================================
+// Swiss life: Langstrasse thugs, demonstrations, tractors, zones, bells
+// ======================================================================
+PED_KINDS.thug = { hp: 55, pants: '#16161c', hat: '#24242c' };
+const THUG_SHIRTS = ['#2a2a34', '#3a1a2a', '#1e2e3a', '#4a3a2a', '#2a3a2a', '#5a1a1a'];
+
+const SIGN_CACHE = {};
+function placardTex(text) {
+  if (SIGN_CACHE[text]) return SIGN_CACHE[text];
+  const t = canvasTex(64, 40, (g, w, h) => {
+    g.fillStyle = '#f4efe5'; g.fillRect(0, 0, w, h); g.strokeStyle = '#171022'; g.lineWidth = 2; g.strokeRect(1, 1, w - 2, h - 2);
+    g.fillStyle = pick(['#c0392b', '#171022', '#1e5bd6', '#2e8b3a']); g.textAlign = 'center'; g.textBaseline = 'middle';
+    const words = text.split(' '); const lines = []; let cur = '';
+    for (const wd of words) { if ((cur + ' ' + wd).trim().length > 9 && cur) { lines.push(cur); cur = wd; } else cur = (cur + ' ' + wd).trim(); }
+    lines.push(cur);
+    const fs = lines.length > 2 ? 9 : 11; g.font = `bold ${fs}px monospace`;
+    lines.forEach((l, i) => g.fillText(l, w / 2, h / 2 + (i - (lines.length - 1) / 2) * (fs + 1), w - 6));
+  }, false);
+  return SIGN_CACHE[text] = t;
+}
+
+const DEMO_THEMES = [
+  { name: 'Klimastreik', banner: 'KLIMASCHUTZ JETZT!', signs: ['ES GIBT KEINEN PLANET B', 'RETTET DIE GLETSCHER', 'KLIMA JETZT', 'ZU HEISS FÜR FONDUE'], shirts: ['#2e8b3a', '#76d8c5', '#f6d66f', '#ecf0f1'] },
+  { name: 'Velodemo', banner: 'MEHR VELOWEGE!', signs: ['VELO STATT STAU', 'AUTOS RAUS', 'MEHR PLATZ FÜRS VELO', 'KLINGEL KLINGEL'], shirts: ['#e67e22', '#3498db', '#f1c40f', '#ecf0f1'] },
+  { name: 'Bauerndemo', banner: 'OHNE BAUERN KEIN FRÜHSTÜCK', signs: ['MILCHPREIS RAUF', 'FAIRE PREISE', 'RETTET DIE ALP', 'KÜHE SIND AUCH LEUTE'], shirts: ['#2e8b3a', '#c0392b', '#6b4226', '#ecf0f1'], tractors: 2 },
+  { name: 'Anwohnerdemo', banner: 'RUHE AB 22 UHR!', signs: ['NEIN ZUM LAUBBLÄSER', 'MEHR PARKPLÄTZE', 'TREPPENHAUS PUTZEN!', 'WASCHKÜCHE NUR DIENSTAG'], shirts: ['#95a5a6', '#7f8c8d', '#bdc3c7', '#8e7a6a'] },
+  { name: 'Fondue-Demo', banner: 'FONDUE FÜR ALLE!', signs: ['MEHR KÄSE', 'BROT NICHT VERLIEREN', 'RACLETTE IST AUCH OK', 'CARAQUELON-PFLICHT'], shirts: ['#f6d66f', '#e3bc48', '#c0392b', '#ecf0f1'] },
+];
+
+const Swiss = {
+  demo: null, demoT: 50, thugT: 0, zone: '', zoneT: 0, lastHour: -1,
+  reset() { if (this.demo) this.endDemo(true); this.demoT = 45; this.zone = ''; this.lastHour = Math.floor(Sky.tod); },
+  inLang(x, z, pad = 0) { const L = Places.langstrasse; return x > L.x0 - pad && x < L.x1 + pad && z > L.z0 - pad && z < L.z1 + pad; },
+  zoneName(x, z) {
+    if (this.inLang(x, z, 2)) return ['LANGSTRASSE', 'Kreis 4 · hier wird nicht diskutiert'];
+    if (z > 300) return ['SEEPROMENADE', 'Zürichsee'];
+    if (x > 131 && x < 163) return ['LIMMAT', 'Brücken & Quais'];
+    const t = W.blockAt(Math.floor(x / W.P), Math.floor(z / W.P));
+    switch (t) {
+      case 'I': case 'L': return ['INDUSTRIEQUARTIER', 'Kreis 5'];
+      case 'H': return ['HAUPTBAHNHOF', 'Pünktlich. Immer.'];
+      case 'B': case 'K': return ['PARADEPLATZ', 'Bankenviertel'];
+      case 'A': case 'G': case 'N': return ['NIEDERDORF', 'Altstadt'];
+      case 'W': return ['SEEFELD', 'Kreis 8'];
+      case 'P': case 'D': return ['SEEPARK', 'Kreis 2'];
+      case 'C': case 'F': case 'Q': case 'S': return ['CITY', 'Kreis 1'];
+    }
+    return null;
+  },
+  update(dt) {
+    const pp = playerPos();
+    // --- zone label
+    this.zoneChk = (this.zoneChk || 0) - dt;
+    if (this.zoneChk <= 0) {
+      this.zoneChk = 0.5; const z = this.zoneName(pp.x, pp.z);
+      if (z && z[0] !== this.zone) { this.zone = z[0]; const el = $('zone'); el.innerHTML = `${z[0]}<small>${z[1]}</small>`; el.style.opacity = 1; this.zoneT = 3; }
+    }
+    if (this.zoneT > 0) { this.zoneT -= dt; if (this.zoneT <= 0) $('zone').style.opacity = 0; }
+    // --- church bells at the full hour
+    const h = Math.floor(Sky.tod);
+    if (h !== this.lastHour) { this.lastHour = h; this.bells(h % 12 || 12); }
+    // --- Langstrasse thugs
+    this.thugT -= dt;
+    if (this.thugT <= 0) {
+      this.thugT = 0.6;
+      const L = Places.langstrasse, cx = (L.x0 + L.x1) / 2, cz = (L.z0 + L.z1) / 2;
+      const near = dist(pp.x, pp.z, cx, cz) < 110;
+      const thugs = World.peds.filter(p => p.thug && !p.removed);
+      for (const t of thugs) if ((!near && dist(t.x, t.z, pp.x, pp.z) > Game.viewR + 30) || (!t.alive && (t.deadT || 0) > 40 && dist(t.x, t.z, pp.x, pp.z) > Game.viewR)) removePed(t);
+      const want = Sky.night > 0.5 ? 9 : 6;
+      if (near && thugs.filter(t => t.alive).length < want) {
+        const cand = Walk.nodes.filter(n => this.inLang(n.x, n.z, 1) && dist(n.x, n.z, pp.x, pp.z) > Game.viewR * 0.75);
+        if (cand.length) { const n = pick(cand); this.spawnThugs(n.x, n.z, randi(1, 3)); }
+      }
+    }
+    // --- demos
+    if (this.demo) this.updateDemo(dt);
+    else if (!Missions.active && Game.player.alive) { this.demoT -= dt; if (this.demoT <= 0) { this.demoT = rand(80, 140); this.startDemo(); } }
+  },
+  spawnThugs(x, z, n) {
+    for (let i = 0; i < n; i++) {
+      const p = new Ped('thug', x + rand(-1.5, 1.5), z + rand(-1.5, 1.5), World.scene); World.peds.push(p);
+      p.thug = true; p.mesh.children[0].children[0].children.forEach(m => { if (m.geometry === PedGeo.torso || m.geometry === PedGeo.arm) m.material = matCol(pick(THUG_SHIRTS)); });
+      GangAI.init(p, p.x, p.z); p.weapon = pick(['knife', 'knife', 'bat', 'pistol', 'pistol', 'smg']);
+      p.onDamage = () => { p.hostile = true; };
+    }
+  },
+  // ---------------- Demonstrations ----------------
+  startDemo() {
+    const pp = playerPos();
+    // a road segment 35-70 m away, heading roughly towards the player
+    const cand = [];
+    for (let i = 0; i < Roads.nodes.length; i++) { const n = Roads.nodes[i]; const d = dist(n.x, n.z, pp.x, pp.z); if (d > 38 && d < 75 && !this.inLang(n.x, n.z, 6)) cand.push(i); }
+    if (!cand.length) return;
+    const a = pick(cand), A = Roads.nodes[a];
+    const nb = A.nb.slice().sort((p, q) => dist(Roads.nodes[p].x, Roads.nodes[p].z, pp.x, pp.z) - dist(Roads.nodes[q].x, Roads.nodes[q].z, pp.x, pp.z))[0];
+    const theme = pick(DEMO_THEMES);
+    const d = this.demo = { theme, from: a, to: nb, t: 0, segs: 0, members: [], cops: [], tractors: [], state: 'march', chantT: 2, age: 0 };
+    d.x = A.x; d.z = A.z;
+    const n = randi(12, 16);
+    for (let i = 0; i < n; i++) {
+      const row = Math.floor(i / 4), col = i % 4;
+      const p = spawnPed('civ', A.x + rand(-2, 2), A.z + rand(-2, 2)); p.demo = d; p.keep = true; p.ai = DemoAI; p.personality = chance(0.5) ? 'brave' : 'fearful';
+      p.offL = (col - 1.5) * 1.6 + rand(-0.3, 0.3); p.offF = -2 - row * 1.7 + rand(-0.3, 0.3); p.r = 0.3;
+      p.mesh.children[0].children[0].children.forEach(m => { if (m.geometry === PedGeo.torso || m.geometry === PedGeo.arm) m.material = matCol(pick(theme.shirts)); });
+      if (i >= 2 && chance(0.65)) this.giveSign(p, pick(theme.signs));
+      p.onDamage = (amt, from) => this.provoked(p, from);
+      d.members.push(p);
+    }
+    // banner carried by the front row
+    const bm = new THREE.Mesh(new THREE.PlaneGeometry(5.8, 1.5), new THREE.MeshBasicMaterial({ map: signTex(theme.banner, '#f4efe5', '#c0392b', 256, 48), side: THREE.DoubleSide }));
+    World.scene.add(bm); d.banner = bm;
+    for (let i = 0; i < 2; i++) { const c = spawnPed('cop', A.x, A.z); c.keep = true; c.ai = DemoAI; c.demo = d; c.offL = i ? 6.2 : -6.2; c.offF = -4; d.cops.push(c); }
+    for (let i = 0; i < (theme.tractors || 0); i++) {
+      const v = spawnVehicle('traktor', A.x, A.z, 0); v.mission = true; v.demo = d; v.offF = -10 - i * 5.5;
+      const drv = spawnPed('civ', A.x, A.z); CivAI.init(drv); drv.keep = true; putInVehicle(drv, v, true); v.ai = DemoTractorAI; d.tractors.push(v);
+    }
+    this.placeAt(d, 0.01);
+    HUD.toast(`${theme.name} unterwegs – Strassen blockiert!`);
+  },
+  giveSign(p, text) {
+    const s = new THREE.Group();
+    s.add(new THREE.Mesh(vbox(0.07, 1.5, 0.07, 0.75), matCol('#8a6a4a')));
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.8), new THREE.MeshLambertMaterial({ map: placardTex(text), side: THREE.DoubleSide }));
+    pl.position.y = 1.7; s.add(pl);
+    s.position.set(0.42, 1.35, 0.1); p.body.add(s); p.sign = s;
+  },
+  placeAt(d, dt) {
+    const A = Roads.nodes[d.from], B = Roads.nodes[d.to];
+    const L = dist(A.x, A.z, B.x, B.z); d.t = Math.min(L, d.t + dt * 1.15 * (d.wait ? 0 : 1));
+    d.dx = (B.x - A.x) / L; d.dz = (B.z - A.z) / L;
+    d.x = A.x + d.dx * d.t; d.z = A.z + d.dz * d.t;
+    if (d.t >= L) {
+      d.segs++;
+      if (d.segs >= 5) { this.endDemo(false); return; }
+      const opts = B.nb.filter(k => k !== d.from && !this.inLang(Roads.nodes[k].x, Roads.nodes[k].z, 6));
+      d.from = d.to; d.to = opts.length ? pick(opts) : d.from; d.t = 0;
+    }
+  },
+  updateDemo(dt) {
+    const d = this.demo; d.age += dt;
+    const alive = d.members.filter(p => p.alive && !p.removed && p.demo === d);
+    if (d.state === 'march') {
+      // wait for stragglers
+      let lag = 0; for (const p of alive) lag += dist(p.x, p.z, p.tx || p.x, p.tz || p.z); lag /= Math.max(1, alive.length);
+      d.wait = lag > 3.5;
+      this.placeAt(d, dt); if (!this.demo) return;
+      // banner in front
+      const rx = -d.dz, rz = d.dx;
+      d.banner.position.set(d.x + d.dx * -0.6, 1.9, d.z + d.dz * -0.6); d.banner.rotation.set(0, Math.atan2(-rz, rx), 0);
+      d.banner.position.y = 1.9 + Math.sin(GAME_TIME * 4) * 0.05;
+      // chanting
+      d.chantT -= dt;
+      if (d.chantT <= 0) {
+        d.chantT = rand(3, 6); const cd = dist(d.x, d.z, Game.camTarget.x, Game.camTarget.z);
+        if (cd < 45 && Sfx.ctx && Sfx.on) { const t = Sfx.ctx.currentTime, v = Sfx.vol(cd); for (let k = 0; k < 3; k++) { Sfx.noise(t + k * 0.42, 0.3, 0.12 * v, 900, 500, 'bandpass', 2); Sfx.tone(t + k * 0.42, 0.25, 0.04 * v, 220 + k * 30, 200, 'sawtooth'); } Sfx.tone(t + 1.4, 0.35, 0.06 * v, 2600, 2500, 'square'); }
+        if (cd < 30) HUD.toast('„' + d.theme.banner.replace('!', '') + '!“');
+      }
+      if (alive.length < d.members.length * 0.4) this.disperse('scatter');
+    }
+    const pp = playerPos();
+    if (d.state !== 'march') {
+      d.endT = (d.endT || 0) + dt;
+      if (d.endT > 25 || dist(d.x, d.z, pp.x, pp.z) > Game.viewR + 40) this.endDemo(true);
+    } else if (dist(d.x, d.z, pp.x, pp.z) > Game.viewR + 90) this.endDemo(true);
+  },
+  provoked(p, from) {
+    const d = p.demo; if (!d || d.state !== 'march' || from !== Game.player) return;
+    this.disperse('angry');
+  },
+  disperse(mode) {
+    const d = this.demo; if (!d || d.state !== 'march') return;
+    d.state = mode; World.scene.remove(d.banner);
+    const P = Game.player; let angry = 0;
+    for (const p of d.members) {
+      if (!p.alive || p.removed) continue;
+      p.demo = null; p.keep = false; CivAI.init(p); p.ai = CivAI; p.r = 0.38;
+      if (mode === 'angry' && p.personality === 'brave' && !P.vehicle) { p.setState('defensive'); p.target = P; p.demoAngry = true; angry++; }
+      else CivAI.panic(p, P.x, P.z, 2);
+    }
+    for (const c of d.cops) if (c.alive && !c.removed) { c.keep = false; CopAI.init(c, null); c.mode = 'chase'; }
+    for (const v of d.tractors) if (v.driver && v.driver.alive) { v.ai = TrafficAI; TrafficAI.init(v); Lane.start(v, Roads.nearest(v.x, v.z), d.to); v.panicT = 8; }
+    HUD.toast(mode === 'angry' ? (angry ? 'Die Demo ist wütend – sie greifen an!' : 'Die Demo löst sich panisch auf!') : 'Die Demo löst sich auf!');
+  },
+  endDemo(force) {
+    const d = this.demo; if (!d) return;
+    if (d.state === 'march') World.scene.remove(d.banner);
+    const pp = playerPos();
+    for (const p of [...d.members, ...d.cops]) {
+      if (p.removed) continue; p.keep = false;
+      if (p.demo === d) { p.demo = null; if (p.kind === 'cop') { if (dist(p.x, p.z, pp.x, pp.z) > Game.viewR) removePed(p); else { p.ai = CivAI; CivAI.init(p); } } else { p.ai = CivAI; CivAI.init(p); p.r = 0.38; } }
+    }
+    for (const v of d.tractors) { v.mission = false; if (v.ai === DemoTractorAI) { v.ai = TrafficAI; TrafficAI.init(v); Lane.start(v, Roads.nearest(v.x, v.z), d.to); } }
+    if (!force) HUD.toast(`Die ${d.theme.name} ist vorbei.`);
+    this.demo = null;
+  },
+  bells(n) {
+    if (!Sfx.ctx || !Sfx.on || !Game.running) return;
+    const t = Sfx.ctx.currentTime;
+    for (let i = 0; i < Math.min(n, 6); i++) { Sfx.tone(t + i * 1.1, 1.6, 0.07, 392, 390, 'sine'); Sfx.tone(t + i * 1.1, 1.2, 0.04, 784, 780, 'triangle'); Sfx.tone(t + i * 1.1, 0.9, 0.02, 1176, 1170, 'sine'); }
+  }
+};
+
+const DemoAI = {
+  update(p, dt) {
+    const d = p.demo; if (!d || !p.alive) return;
+    if (p.kind === 'cop' && Police.level > 0) { p.demo = null; p.keep = false; CopAI.init(p, null); return; }
+    const rx = -d.dz, rz = d.dx;
+    p.tx = d.x + d.dx * p.offF + rx * p.offL; p.tz = d.z + d.dz * p.offF + rz * p.offL;
+    const dx = p.tx - p.x, dz = p.tz - p.z, dd = Math.hypot(dx, dz);
+    p.steer(dx, dz, dd > 0.4 ? clamp(dd * 1.2, 0.9, 3.4) : 0, dt);
+    if (dd < 0.6) p.dir += angDiff(p.dir, Math.atan2(d.dx, d.dz)) * dt * 4;
+    // raise fists / signs while chanting
+    if (p.kind !== 'cop') { const ph = Math.sin(GAME_TIME * 5 + p.id); if (!p.sign) { p.armL.rotation.x = ph > 0.3 ? -2.8 : p.armL.rotation.x; } else { p.sign.position.y = 1.35 + Math.max(0, ph) * 0.25; p.armR.rotation.x = -2.6; } }
+  },
+  onEvent(e) {
+    const d = Swiss.demo; if (!d || d.state !== 'march') return;
+    if ((e.type === 'GUNSHOT' || e.type === 'EXPLOSION' || e.type === 'VEHICLE_DESTROYED') && dist(e.x, e.z, d.x, d.z) < (e.type === 'GUNSHOT' ? 26 : 40)) Swiss.disperse('scatter');
+  }
+};
+const DemoTractorAI = {
+  update(v, dt) {
+    const d = v.demo; if (!d || !v.alive || !v.driver) { v.throttle = 0; return; }
+    const tx = d.x + d.dx * v.offF, tz = d.z + d.dz * v.offF;
+    const dd = dist(v.x, v.z, tx, tz), ta = Math.atan2(tx - v.x, tz - v.z);
+    v.steerIn = clamp(-angDiff(v.a, dd > 1.5 ? ta : Math.atan2(d.dx, d.dz)) * 2, -1, 1);
+    const want = dd > 1.2 ? Math.min(4, dd) : 0;
+    v.throttle = clamp((want - v.v) * 0.6, -1, 1); v.handbrake = want === 0;
+    if (chance(dt * 0.15)) Sfx.play('horn', v.distToCam());
+  }
+};
+
+if (/debug/.test(location.search)) window.__G = { Game, World, Police, Missions, Combat, Population, EventBus, Fires, Props, Emergency, Sky, Weather, Places, Roads, spawnVehicle, spawnPed, Input, Pickups, WEAPONS, Score, WorldEvents, GameOver, Special, Swiss };
+
+EventBus.on('Demo', ['GUNSHOT', 'EXPLOSION', 'VEHICLE_DESTROYED'], e => DemoAI.onEvent(e));
 
 })();
 </script>
