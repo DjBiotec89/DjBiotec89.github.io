@@ -714,8 +714,8 @@ const GFX = (() => {
     prophet: { body: 'mask', c1: ROT, c2: DIRT, rings: 1, shards: 3 },
     parasit: { body: 'orb', c1: BILE, c2: FLESH, eyes: 6, thorns: 10, tent: 6, mouth: 1 },
     koenigin: { body: 'crystal', c1: BRUISE, c2: BONE, eyes: 2, rings: 2, shards: 8 },
-    chirurg: { body: 'mask', beak: 1, c1: BONE, c2: BLOOD, shards: 6, rings: 1 },
-    nonne: { body: 'mask', c1: P.ink, c2: BONE, halo: 1, sat: 2, flies: 3 },
+    chirurg: { body: 'surgeon', c1: '#9fc4c0', c2: BLOOD, scale: 1.45 },
+    nonne: { body: 'nun', c1: P.ink, c2: BILE, halo: 1, flies: 3, scale: 1.4 },
     puppe: { body: 'doll', c1: SKIN, c2: P.pink, rings: 1 },
     nadelkind: { body: 'doll', c1: P.pink, c2: BLOOD, thorns: 16, scale: .9, flies: 2 },
     /* Ebene II: Das Fleischarchiv */
@@ -1072,6 +1072,41 @@ if(f>${o.flat ? '.8' : '.64'})c=vec3(.04,.024,.028);c=mix(c,vec3(1.),uFl*.7);gl_
       for (let k = 0; k < 2; k++) { const r = new THREE.Group(); for (let i = 0; i < 12; i++) { const a = i / 12 * 6.283, t = mesh(new THREE.TetrahedronGeometry(.32 - k * .08, 0), vmat([s.c1, s.c2, BONE, P.yel][(i + k) % 4], s.c2, { flat: 1, vein: 1 })); t.position.set(Math.cos(a) * (1.3 - k * .5), Math.sin(a) * (1.3 - k * .5), 0); t.rotation.set(i, a, 0); r.add(t); } G.add(r); U.spin.push([r, k ? -.8 : .5, 'z']); }
       return { spot: () => [0, 0, .2, .38] };
     },
+    /* --- Spielfiguren --- */
+    surgeon(G, U, s) {
+      const coat = mesh(new THREE.CylinderGeometry(.55, 1.0, 2.4, 10, 1, true), vmat(s.c1, '#5f8784', { flat: 1, double: 1, vein: .35 })); coat.position.y = -.85; G.add(coat); for (const sd of [-1, 1]) G.add(at(sph(.3, s.c1, '#5f8784', { flat: 1 }, 1), sd * .5, .3, 0)); const col = mesh(new THREE.TorusGeometry(.32, .07, 6, 16), vmat(BONE, '#b9a98a', { flat: 1 })); col.rotation.x = Math.PI / 2; col.position.y = .38; G.add(col);
+      for (let i = 0; i < 6; i++) { const sp = mesh(new THREE.CircleGeometry(.06 + (i % 3) * .05, 8), basic(BLOOD)); sp.position.set((i - 2.5) * .18, -.5 - (i % 2) * .5, .73 - (i % 2) * .12); sp.scale.y = 1.6; G.add(sp); }
+      const hd = sph(.48, SKIN, BLOOD, { vein: .2 }, 3); hd.scale.set(1, 1.2, 1); hd.position.y = .75; G.add(hd); an(U, hd, 'rz', .06, .8);
+      const cap = mesh(new THREE.SphereGeometry(.5, 16, 8, 0, 6.283, 0, Math.PI / 2), vmat(s.c1, s.c2, { flat: 1, vein: 0 })); cap.scale.set(.95, .7, .95); cap.position.y = .9; G.add(cap);
+      const mask = mesh(new THREE.SphereGeometry(.47, 16, 8, Math.PI / 2 - 1.2, 2.4, Math.PI * .5, Math.PI * .32), vmat(s.c1, s.c2, { flat: 1, double: 1, vein: 0 })); mask.scale.set(1.08, 1.28, 1.08); mask.position.y = .76; G.add(mask);
+      for (const sd of [-1, 1]) { const st = cyl(.012, .012, .5, BONE, BONE, { flat: 1 }, 3); st.position.set(sd * .38, .78, .12); st.rotation.z = sd * 1.2; G.add(st); }
+      [[-.17, .26, .2], [.19, .14, .13]].forEach(([x, r, h], i) => { const rim = mesh(new THREE.TorusGeometry(r * .62, .035, 6, 18), vmat(P.rust, DIRT, { flat: 1 })); rim.position.set(x, .92, .44); G.add(rim); const e = mkEye(r * .55, i ? P.yel : ETHER, { slit: 1 }); e.position.set(x, .92, .4); e.userData.i = i; G.add(e); U.eyes.push(e); });
+      const band = mesh(new THREE.TorusGeometry(.47, .03, 4, 30), vmat(P.ink, DIRT, { flat: 1 })); band.rotation.x = Math.PI / 2; band.position.y = .92; G.add(band);
+      const lamp = new THREE.Group(); lamp.position.set(0, 1.22, .32); lamp.add(mesh(new THREE.CylinderGeometry(.13, .1, .1, 12), vmat(BONE, P.rust, { flat: 1 }))); const bulb = mesh(new THREE.CircleGeometry(.1, 12), basic(P.yel)); bulb.position.y = .06; bulb.rotation.x = -Math.PI / 2 + .5; lamp.add(bulb); lamp.rotation.x = .5; G.add(lamp); an(U, bulb, 's', .25, 6);
+      const tools = [() => { const g = new THREE.Group(); g.add(at(mesh(new THREE.BoxGeometry(.05, .3, .02), basic(BONE)), 0, .15, 0)); g.add(at(mesh(new THREE.ConeGeometry(.04, .14, 3), basic('#dfe6ea')), 0, .37, 0)); return g; },
+        () => { const g = new THREE.Group(); for (const sd of [-1, 1]) { const a = mesh(new THREE.BoxGeometry(.025, .38, .02), basic('#dfe6ea')); a.position.set(sd * .03, .2, 0); a.rotation.z = -sd * .12; g.add(a); } return g; },
+        () => { const g = new THREE.Group(); g.add(at(mesh(new THREE.BoxGeometry(.05, .2, .03), basic(DIRT)), 0, .1, 0)); const bl = mesh(new THREE.BoxGeometry(.22, .1, .01), basic('#dfe6ea')); bl.position.set(.1, .26, 0); g.add(bl); for (let i = 0; i < 5; i++) g.add(at(mesh(new THREE.ConeGeometry(.012, .04, 3), basic('#dfe6ea')), .02 + i * .04, .2, 0)); return g; },
+        () => { const g = new THREE.Group(); g.add(at(cyl(.05, .05, .26, ETHER, BONE, { alpha: .6 }, 8), 0, .13, 0)); g.add(at(cyl(.008, .008, .25, BONE, BONE, { flat: 1 }, 3), 0, .38, 0)); return g; }];
+      tools.forEach((mk, i) => { const sd = i % 2 ? 1 : -1, k = i >> 1, l = limb(3, .5, .075, vmat(P.rust, DIRT, { flat: 1 })); l.root.position.set(sd * (.62 + k * .05), .3 - k * .5, .15); l.root.rotation.z = -sd * (1.3 + k * .5); G.add(l.root); U.limbs.push({ l, kind: 'finger', ph: i * 1.3 }); const t = mk(); t.position.y = .38; t.scale.setScalar(1.8); l.joints[2].add(t); });
+      for (let i = 0; i < 5; i++) G.add(at(mesh(new THREE.BoxGeometry(.18, .03, .03), basic(INK)), 0, -.15 - i * .2, .62 + i * .02));
+      return {};
+    },
+    nun(G, U, s) {
+      const robe = mesh(new THREE.ConeGeometry(1.0, 2.8, 12, 1, true), vmat('#2a2230', '#141018', { flat: 1, double: 1, vein: .5 })); robe.position.y = -.9; G.add(robe);
+      const veil = mesh(new THREE.SphereGeometry(.62, 16, 12, Math.PI / 2 + .95, 6.283 - 1.9, 0, Math.PI * .62), vmat('#2a2230', '#141018', { flat: 1, double: 1, vein: .3 })); veil.scale.set(1, 1.25, 1); veil.position.y = .6; G.add(veil);
+      const wimp = mesh(new THREE.TorusGeometry(.42, .1, 8, 24), vmat(BONE, '#cfc3a6', { flat: 1, vein: 0 })); wimp.scale.set(1, 1.15, .6); wimp.position.set(0, .62, .3); G.add(wimp);
+      const face = sph(.38, '#d9cfbd', '#8f8573', { flat: 1, vein: .1 }, 3); face.scale.set(.9, 1.1, .55); face.position.set(0, .62, .3); G.add(face);
+      for (let i = 0; i < 4; i++) { const k = mesh(new THREE.BoxGeometry(.015, .16 + i * .03, .01), basic(INK)); k.position.set(-.1 + i * .08, .5 + (i % 2) * .2, .52); k.rotation.z = .4 - i * .3; G.add(k); }
+      for (const sd of [-1, 1]) { const lid = mesh(new THREE.BoxGeometry(.13, .025, .02), basic(INK)); lid.position.set(sd * .13, .66, .52); lid.rotation.z = sd * .2; G.add(lid); for (let j = 0; j < 3; j++) G.add(at(mesh(new THREE.BoxGeometry(.012, .06, .012), basic(INK)), sd * .13 + (j - 1) * .04, .66, .53)); }
+      const te = mkEye(.1, BILE, { slit: 1 }); te.position.set(0, .86, .5); te.userData.i = 0; G.add(te); U.eyes.push(te);
+      const cr = new THREE.Group(); cr.add(mesh(new THREE.BoxGeometry(.05, .3, .03), basic(BILE))); cr.add(at(mesh(new THREE.BoxGeometry(.2, .05, .03), basic(BILE)), 0, .06, 0)); cr.position.set(0, -.1, .58); G.add(cr);
+      U.rosary = []; for (let i = 0; i < 14; i++) { const b = i % 4 === 0 ? sph(.07, BONE, '#8f8573', { flat: 1 }, 1) : mesh(new THREE.SphereGeometry(.035, 6, 4), basic(i % 2 ? BILE : BONE)); b.userData = { a: i / 14 * 6.283 }; G.add(b); U.rosary.push(b); }
+      const pv = new THREE.Group(); pv.position.set(.75, .1, .3); G.add(pv); pv.add(at(cyl(.008, .008, .9, P.yel, P.yel, { flat: 1 }, 3), 0, -.45, 0)); const ce = sph(.16, P.yel, P.rust, { flat: 1 }, 1); ce.position.y = -.95; pv.add(ce); an(U, pv, 'rz', .45, 1.5);
+      for (let i = 0; i < 10; i++) { const b = mesh(new THREE.SphereGeometry(.05 + Math.random() * .05, 6, 4), new THREE.MeshBasicMaterial({ color: BILE, transparent: true, opacity: .55 })); b.userData = { x: .75 + (Math.random() - .5) * .3, z: .35, sp: .25 + Math.random() * .3, ph: Math.random(), h: 2.2 }; G.add(b); U.rise.push(b); }
+      for (const sd of [-1, 1]) { const h = sph(.11, '#d9cfbd', '#8f8573', { flat: 1 }, 1); h.position.set(sd * .08, -.35, .62); G.add(h); }
+      const cn = cyl(.05, .05, .35, BONE, '#cfc3a6', {}, 8); cn.position.set(0, -.15, .66); G.add(cn); const fl = mesh(new THREE.ConeGeometry(.04, .12, 6), basic(BILE)); fl.position.set(0, .08, .66); G.add(fl); U.flick = [fl];
+      return {};
+    },
     /* --- Endgegner --- */
     abysseye(G, U, s) {
       eyeAt(G, U, 1.15, s.c1, 0, 0, 0); U.lids = []; for (const sd of [-1, 1]) { const l = mesh(new THREE.TorusGeometry(1.2, .3, 10, 30, Math.PI), vmat(P.flesh, BLOOD, { disp: .05, vein: 2 })); l.rotation.z = sd > 0 ? 0 : Math.PI; l.scale.y = .55; l.position.set(0, sd * .2, .3); G.add(l); an(U, l, 'py', .12 * sd, .8); }
@@ -1165,6 +1200,7 @@ if(f>${o.flat ? '.8' : '.64'})c=vec3(.04,.024,.028);c=mix(c,vec3(1.),uFl*.7);gl_
     U.spin.forEach(s => { s[0].rotation[s[2] || 'y'] = t * s[1]; });
     U.anim.forEach(([o, ch, a, f, ph, b]) => { const v = Math.sin(t * f * (1 + S.act * .25) + ph) * a; if (ch === 's') o.scale.setScalar(b * (1 + v)); else if (ch === 'sx') o.scale.x = b * (1 + v); else if (ch === 'sy') o.scale.y = b * (1 + v); else if (ch[0] === 'p') o.position[ch[1]] = b + v; else o.rotation[ch[1]] = b + v; });
     U.rise.forEach(m => { const d = m.userData, k = ((t * d.sp + d.ph) % 1 + 1) % 1; m.position.set(d.x + Math.sin(t * 2 + d.ph * 5) * .05, -d.h / 2 + k * d.h, d.z); });
+    if (U.rosary) U.rosary.forEach((b, i) => { const a = b.userData.a + t * .6; b.position.set(Math.cos(a) * .9, -.2 + Math.sin(a * 2 + t) * .12, Math.sin(a) * .5 + .2); });
     if (U.flick) U.flick.forEach((f, i) => { f.scale.set(.85 + Math.random() * .3, .8 + Math.abs(Math.sin(t * 9 + i)) * .5, 1); f.rotation.z = Math.sin(t * 5 + i) * .15; });
     if (U.wseg) U.wseg.forEach((g, i) => { g.position.x = Math.sin(t * 1.8 - i * .55) * .32 * (i / 8 + .3); g.position.z = Math.cos(t * 1.3 - i * .5) * .2; });
     if (U.sn) { const a0 = t * .5, n = U.sn.length; U.sn.forEach((m, i) => { const a = a0 + .35 + i / n * 5.6, r = 1.15 + Math.sin(i * .8 + t * 3) * .06; m.position.set(Math.cos(a) * r, Math.sin(a) * r, Math.sin(a * 2 + t) * .2); }); U.snHead.position.set(Math.cos(a0) * 1.15, Math.sin(a0) * 1.15, 0); U.snHead.rotation.set(0, 0, a0 + Math.PI); }
