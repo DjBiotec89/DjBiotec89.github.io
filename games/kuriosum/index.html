@@ -713,7 +713,7 @@ const GFX = (() => {
     patient: { body: 'bloat', c1: BILE, c2: BLOOD, eyes: 7, tent: 8, thorns: 12, sat: 4, flies: 8, mouth: 1, scale: 1.22 },
     prophet: { body: 'mask', c1: ROT, c2: DIRT, rings: 1, shards: 3 },
     parasit: { body: 'orb', c1: BILE, c2: FLESH, eyes: 6, thorns: 10, tent: 6, mouth: 1 },
-    koenigin: { body: 'crystal', c1: BRUISE, c2: BONE, eyes: 2, rings: 2, shards: 8 },
+    koenigin: { body: 'queen', c1: BRUISE, c2: BONE, rings: 1, shards: 6 },
     chirurg: { body: 'surgeon', c1: '#9fc4c0', c2: BLOOD, rings: 1 },
     nonne: { body: 'nun', c1: P.ink, c2: BILE, halo: 1, flies: 3 },
     puppe: { body: 'doll', c1: SKIN, c2: P.pink, rings: 1 },
@@ -1113,6 +1113,18 @@ if(f>${o.flat ? '.8' : '.64'})c=vec3(.04,.024,.028);c=mix(c,vec3(1.),uFl*.7);gl_
       for (let i = 0; i < 8; i++) { const b = mesh(new THREE.SphereGeometry(.05 + Math.random() * .05, 6, 4), new THREE.MeshBasicMaterial({ color: BILE, transparent: true, opacity: .5 })); b.userData = { x: 1.15 + (Math.random() - .5) * .3, z: .3, sp: .25 + Math.random() * .3, ph: Math.random(), h: 1.8 }; G.add(b); U.rise.push(b); }
       return {};
     },
+    queen(G, U, s) {
+      const POR = '#d9cfe6', PD = '#7d6a94', faceM = (al) => { const f = sph(.82, POR, PD, al ? { alpha: al, vein: .1 } : { flat: 1, vein: .15 }, 3); f.scale.set(.88, 1.1, .78); return f; };
+      G.add(faceM());
+      U.echo = []; for (const sd of [-1, 1]) { const g = new THREE.Group(); g.add(faceM(.32)); g.position.set(sd * .42, .05, -.25); G.add(g); U.echo.push([g, sd]); }
+      for (const sd of [-1, 1]) { const e = mkEye(.15, ETHER, { slit: 1 }); e.position.set(sd * .27, .14, .6); e.userData.i = sd; G.add(e); U.eyes.push(e); const tr = mesh(new THREE.BoxGeometry(.03, .3, .01), basic(BRUISE)); tr.position.set(sd * .27, -.1, .62); G.add(tr); }
+      const mo = mesh(new THREE.CircleGeometry(.17, 18), basic(INK)); mo.scale.y = 1.35; mo.position.set(0, -.42, .63); G.add(mo); const mi = mesh(new THREE.CircleGeometry(.09, 12), basic(BLOOD)); mi.position.set(0, -.47, .64); G.add(mi); an(U, mo, 'sy', .25, 3.2);
+      const cr = new THREE.Group(); cr.position.y = .8; const band = mesh(new THREE.CylinderGeometry(.62, .55, .2, 18, 1, true), vmat(P.yel, P.rust, { flat: 1, double: 1, vein: .2 })); cr.add(band);
+      for (let i = 0; i < 5; i++) { const a = (i - 2) * .42, f = new THREE.Group(); f.position.set(Math.sin(a) * .58, .1, Math.cos(a) * .58); f.rotation.z = -a * .6; f.add(at(cyl(.03, .03, .3, P.yel, P.rust, { flat: 1 }, 5), 0, .12, 0)); for (const sd of [-1, 1]) f.add(at(cyl(.025, .025, .42 + (i === 2 ? .18 : 0), P.yel, P.rust, { flat: 1 }, 5), sd * .07, .45 + (i === 2 ? .09 : 0), 0)); f.add(at(mesh(new THREE.BoxGeometry(.17, .04, .04), vmat(P.yel, P.rust, { flat: 1 })), 0, .26, 0)); cr.add(f); an(U, f, 'rz', .05, 9, i); }
+      G.add(cr);
+      U.waves = []; for (let i = 0; i < 3; i++) { const w = mesh(new THREE.TorusGeometry(.25, .025, 4, 30), new THREE.MeshBasicMaterial({ color: i % 2 ? ETHER : BONE, transparent: true })); w.position.set(0, -.42, .7); w.userData.ph = i / 3; G.add(w); U.waves.push(w); }
+      return {};
+    },
     /* --- Endgegner --- */
     abysseye(G, U, s) {
       eyeAt(G, U, 1.15, s.c1, 0, 0, 0); U.lids = []; for (const sd of [-1, 1]) { const l = mesh(new THREE.TorusGeometry(1.2, .3, 10, 30, Math.PI), vmat(P.flesh, BLOOD, { disp: .05, vein: 2 })); l.rotation.z = sd > 0 ? 0 : Math.PI; l.scale.y = .55; l.position.set(0, sd * .2, .3); G.add(l); an(U, l, 'py', .12 * sd, .8); }
@@ -1207,6 +1219,8 @@ if(f>${o.flat ? '.8' : '.64'})c=vec3(.04,.024,.028);c=mix(c,vec3(1.),uFl*.7);gl_
     U.anim.forEach(([o, ch, a, f, ph, b]) => { const v = Math.sin(t * f * (1 + S.act * .25) + ph) * a; if (ch === 's') o.scale.setScalar(b * (1 + v)); else if (ch === 'sx') o.scale.x = b * (1 + v); else if (ch === 'sy') o.scale.y = b * (1 + v); else if (ch[0] === 'p') o.position[ch[1]] = b + v; else o.rotation[ch[1]] = b + v; });
     U.rise.forEach(m => { const d = m.userData, k = ((t * d.sp + d.ph) % 1 + 1) % 1; m.position.set(d.x + Math.sin(t * 2 + d.ph * 5) * .05, -d.h / 2 + k * d.h, d.z); });
     if (U.rosary) U.rosary.forEach((b, i) => { const a = b.userData.a + t * .6; b.position.set(Math.cos(a) * 1.45, -.35 + Math.sin(a * 2 + t) * .1, Math.sin(a) * .55 + .2); });
+    if (U.echo) U.echo.forEach(([g, sd]) => { g.position.x = sd * (.38 + Math.sin(t * 1.6) * .12); g.position.y = .05 + Math.sin(t * 1.6 + sd) * .05; });
+    if (U.waves) U.waves.forEach(w => { const k = (t * .55 + w.userData.ph) % 1; w.scale.setScalar(1 + k * 5); w.position.z = .7 + k * .4; w.material.opacity = (1 - k) * .9; });
     if (U.flick) U.flick.forEach((f, i) => { f.scale.set(.85 + Math.random() * .3, .8 + Math.abs(Math.sin(t * 9 + i)) * .5, 1); f.rotation.z = Math.sin(t * 5 + i) * .15; });
     if (U.wseg) U.wseg.forEach((g, i) => { g.position.x = Math.sin(t * 1.8 - i * .55) * .32 * (i / 8 + .3); g.position.z = Math.cos(t * 1.3 - i * .5) * .2; });
     if (U.sn) { const a0 = t * .5, n = U.sn.length; U.sn.forEach((m, i) => { const a = a0 + .35 + i / n * 5.6, r = 1.15 + Math.sin(i * .8 + t * 3) * .06; m.position.set(Math.cos(a) * r, Math.sin(a) * r, Math.sin(a * 2 + t) * .2); }); U.snHead.position.set(Math.cos(a0) * 1.15, Math.sin(a0) * 1.15, 0); U.snHead.rotation.set(0, 0, a0 + Math.PI); }
