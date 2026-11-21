@@ -706,8 +706,8 @@ function update(dt) {
   plat.tx = clamp(plat.tx, WALL + half, LW - WALL - half);
   if (plat.stun > 0) plat.tx = plat.x;
   const sp = plat.slow > 0 ? 0.45 : 1;
-  if (lvl('wackelplatte') || PL().slide) plat.x += (plat.tx - plat.x) * Math.min(1, dt * (PL().slide ? 4 : 6) * sp);
-  else plat.x += clamp(plat.tx - plat.x, -400 * sp * dt, 400 * sp * dt);
+  if (lvl('wackelplatte') || PL().slide) plat.x += (plat.tx - plat.x) * Math.min(1, dt * (PL().slide ? 6 : 10) * sp);
+  else plat.x += clamp(plat.tx - plat.x, -1200 * sp * dt, 1200 * sp * dt);
   plat.squash -= dt; plat.blink -= dt;
   plat.sp.setFrame(plat.squash > 0 ? 2 : (Rm.t % 3.2 < 0.15 ? 1 : 0)); plat.sp.sx = plat.w / plat.bw;
   plat.sp.tint(plat.stun > 0 ? '#bfefff' : plat.slow > 0 ? '#b6f08a' : '#ffffff');
@@ -1285,7 +1285,7 @@ renderer.domElement.addEventListener('pointermove', (ev) => {
   p.moved += Math.abs(x - p.x) + Math.abs(y - p.y);
   if (p.zone === 'aim' && b && b.caught) Rm.aimA = aimDir(x, y, b);
   else if (p.zone === 'zaim' && b && b.caught) Rm.aimA = clamp(p.a0 + (x - p.sx) * 0.035, -Math.PI + 0.25, -0.25);
-  else if (Rm) Rm.plat.tx += (x - p.lastX) * (PL().fast ? 2 : 1.15);
+  else if (Rm) Rm.plat.tx += (x - p.lastX) * (PL().fast ? 2.2 : 1.3);
   p.x = x; p.y = y; p.lastX = x;
 });
 const endPtr = (ev) => {
