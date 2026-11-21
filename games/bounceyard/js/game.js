@@ -1495,7 +1495,7 @@ function runTiles(extra = []) {
     { ic: UIC('st_pu'), v: Object.values(R.pu).reduce((a, b) => a + b, 0), l: 'Power-ups' },
     { ic: MIC('coin'), v: R.coins, l: 'Münzen' },
     { ic: MIC('heart'), v: `${Math.max(0, R.hearts)}/${R.maxHearts}`, l: 'Herzen' },
-    ...Object.keys(R.rel || {}).map((k) => ({ ic: `<img class="px" src="assets/relics/${k}.png">`, v: RELICS[k].name, l: 'Relikt', wide: true })),
+    ...(Object.keys(R.rel || {}).length ? [{ wide: true, ic: '', v: '', l: `<span class="relrow">${Object.keys(R.rel).map((k) => `<img class="px" title="${RELICS[k].name}" src="assets/relics/${k}.png">`).join('')}</span>Relikte` }] : []),
     ...extra,
   ];
   if (sy.length) t.push({ wide: true, ic: '', v: '', l: `<span class="chips">${sy.map((x) => chip(MIC('../icons/' + x.a), x.name, '#ffd45c')).join('')}</span>` });
@@ -1921,7 +1921,7 @@ manager.onLoad = () => { if (booted) return; booted = true; buildBg(); buildTitl
 window.__BY = {
   G, save,
   setAuto(v) { G.auto = v; },
-  glanz(n) { save.glanz += n; persist(); }, coins(n) { for (let i = 0; i < n; i++) dropCoin(90, 120); }, relic(k) { giveRelic(k); }, relicChoice() { relicChoice('Test', () => {}); },
+  glanz(n) { save.glanz += n; persist(); }, victory() { victory(); }, coins(n) { for (let i = 0; i < n; i++) dropCoin(90, 120); }, relic(k) { giveRelic(k); }, relicChoice() { relicChoice('Test', () => {}); },
   pat(p, k = 'seed') { const e = G.room.enemies.find((x) => !x.dead); if (e) shotPattern(e, p, k, 70); },
   start(mk = 'nib') { save.unlocked[mk] = true; newRun(BASE_BY[mk]); },
   newRunG(g) { newRun(g); }, platShop: () => { shopTab = 'p'; openMarbleShop(); }, PLAT_BY, FXC, shop: () => openMarbleShop(), title: () => showTitle(), map: () => showMap(), fuse, BASE_BY, kiste: () => openKiste(), fusion: () => openFusion(), werk: () => openWerkstatt(), buch: () => openBuch(), FZ, initMeta,
