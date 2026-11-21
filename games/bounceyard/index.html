@@ -9,6 +9,9 @@
 .relrow { display:flex; flex-wrap:wrap; justify-content:center; gap:calc(var(--u)*2); margin-bottom:calc(var(--u)*1); }
 .relrow img { width:calc(var(--u)*12); height:calc(var(--u)*12); image-rendering:pixelated; }
 .lvs { display:inline-flex; gap:calc(var(--u)*0.5); align-items:center; } .lvs img { width:calc(var(--u)*5); height:calc(var(--u)*5); image-rendering:pixelated; }
+.pimgw { position:relative; display:inline-block; line-height:0; }
+.pimg.hid { filter:brightness(0) opacity(.6); }
+.pimgw b { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#ffd45c; font-size:calc(var(--u)*var(--qs)); line-height:1; text-shadow:calc(var(--u)*0.6) calc(var(--u)*0.6) 0 #2b1d3a; }
 </style>
 <style>
 :root { --ink:#2b1d3a; --ink2:#3d2b52; --cream:#fffcf0; --pink:#ff8fa8; --gold:#ffd45c; --mint:#8fd16a; --sky:#6fd0f0; --red:#ff5a6e; }

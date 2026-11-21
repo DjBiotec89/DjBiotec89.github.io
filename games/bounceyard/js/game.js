@@ -476,8 +476,8 @@ function addEnemy(k, x, y) {
 function spawnBoss() {
   const e = addEnemy('huepfer', 90, 70);
   const B = BIO();
-  e.sp.remove(); e.sp = new Sprite(`assets/enemies/${B.boss}.png`, 32, 32, 2, { z: 8, parent: world });
-  e.k = B.boss; e.def = { name: B.bossName, hp: B.bossHp }; e.boss = true; e.r = 14; e.max = e.hp = B.bossHp; e.atk = 2.5; e.phase = 0; e.move = 0;
+  e.sp.remove(); e.sp = new Sprite(`assets/enemies/${B.boss}.png`, 48, 48, 2, { z: 8, parent: world });
+  e.k = B.boss; e.def = { name: B.bossName, hp: B.bossHp }; e.boss = true; e.r = 19; e.max = e.hp = B.bossHp; e.atk = 2.5; e.phase = 0; e.move = 0;
   G.room.boss = e;
   const mk = biomePool(0)[0]; addEnemy(mk, 40, 120); addEnemy(mk, 140, 120);
 }
@@ -791,7 +791,8 @@ function update(dt) {
     if (s.wave) s.x += Math.cos(s.t * s.wf) * s.wave * dt;
     if (s.bounce && (s.x < WALL + 3 || s.x > LW - WALL - 3)) { s.vx = -s.vx; s.x = clamp(s.x, WALL + 3, LW - WALL - 3); s.bounce--; emit(s.x, s.y, '#fffcf0', 3, 20); }
     if (s.hold) { if (s.t < s.hold) { s.vx *= 1 - dt * 4; s.vy *= 1 - dt * 4; if (Math.random() < 0.3) emit(s.x, s.y, '#ff5a6e', 1, 10, 1, 0.2, { g: 0 }); } else { const a = Math.atan2(PLAT_Y - s.y, G.room.plat.x - s.x); s.vx = Math.cos(a) * s.hsp; s.vy = Math.sin(a) * s.hsp; s.hold = 0; sfx.play('launch', 1.6); } }
-    if (s.kind === 'bubble') s.vx = Math.sin(G.t * 3 + s.wob) * 25;
+    if (s.kind === 'bubble') s.vx = Math.sin(G.t * 3 + (s.wob || 0)) * 25;
+    if (s.pop) { s.pop -= dt; if (Math.random() < 0.3) emit(s.x, s.y, '#ff2a3a', 1, 6, 1, 0.15, { g: 0 }); if (s.pop <= 0) { s.dead = true; emit(s.x, s.y, '#ff86c8', 12, 50); sfx.play('pop'); for (const a of [0.55, 1.2, 1.95, 2.6]) shoot(s.x, s.y, 'seed', Math.cos(a) * 55, Math.sin(a) * 55); continue; } }
     if (s.kind === 'shard' && s.vy < 15 && s.y < 60) s.vy += 40 * dt;
     s.sp.at(s.x, s.y);
     if (s.red) { s.sp.setFrame(Math.floor(s.t * 10) % 2); if (Math.random() < 0.45) emit(s.x, s.y, '#ff2a3a', 1, 6, 1, 0.22, { g: 0 }); }
@@ -1162,35 +1163,60 @@ function updateBoss(e, dt) {
   e.atk -= dt * (e.slow > 0 ? 0.5 : 1);
   if (e.atk < 0.7 && !e.telegraph) e.telegraph = 1;
   if (e.atk <= 0 && Rm.state !== 'clear') {
-    e.telegraph = 0; e.atk = ph3 ? 1.8 : ph2 ? 2.3 : 3.1;
-    const fan = (n, sp, kind = 'seed') => { for (let i = 0; i < n; i++) { const [vx, vy] = aimAtPlatform(e, sp, (i - (n - 1) / 2) * 0.22); shoot(e.x, e.y + 12, kind, vx, vy); } sfx.play('launch'); };
-    const summon = (k, n = 2) => { if (Rm.enemies.length < 10) for (let i = 0; i < n; i++) { const dx = (i - (n - 1) / 2) * 40; const s2 = addEnemy(k, e.x + dx, e.y + 20); s2.hx = clamp(e.x + dx, 18, 162); s2.hy = e.y + 26; } sfx.play('roar'); };
-    const rain = (n, kind = 'rock') => { G.shake = 0.35; sfx.play('boom'); for (let i = 0; i < n; i++) { const x = i === 0 ? plat.x : rnd(20, 160); setTimeout(() => G.room === Rm && shoot(x, TOP + 4, kind, 0, 20), 350 + i * 220); } };
-    const spiral = (n) => { for (let i = 0; i < n; i++) setTimeout(() => { if (G.room !== Rm || e.dead) return; const a = i * 0.55; shoot(e.x, e.y, 'spiral', Math.cos(a) * 60, Math.abs(Math.sin(a)) * 50 + 20); }, i * 90); sfx.play('launch'); };
-    const m = e.phase++ % 3;
+    e.telegraph = 0; e.atk = ph3 ? 2.1 : ph2 ? 2.5 : 3.1;
+    const L = (ms, f) => setTimeout(() => { if (G.room === Rm && !e.dead && Rm.state !== 'clear') f(); }, ms);
+    // Warnung am Boden: rote Punkte dort, wo gleich etwas einschlägt
+    const warn = (x, w, ms) => { for (let t = 0; t < ms; t += 70) L(t, () => { for (let k = -w / 2; k <= w / 2; k += 4) emit(x + k, PLAT_Y - 1, '#ff2a3a', 1, 3, 1, 0.1, { g: 0 }); }); };
+    const drop = (x, kind, ms, vy = 95) => { warn(x, 10, ms); L(ms, () => shoot(x, TOP + 4, kind, 0, vy)); };
+    const lob = (tx, kind = 'seed', T = 1.6) => { const s2 = shoot(e.x, e.y + 14, kind, 0, 0); const g = 70; s2.vx = (tx - e.x) / T; s2.vy = (PLAT_Y - e.y - 14 - 0.5 * g * T * T) / T; s2.g = g; };
+    const aimed = (n, gap, sp, kind = 'seed') => { for (let i = 0; i < n; i++) L(i * gap, () => { const [vx, vy] = aimAtPlatform(e, sp, rnd(-0.05, 0.05)); shoot(e.x, e.y + 14, kind, vx, vy); sfx.play('launch'); }); };
+    // Vorhang: eine Reihe von oben mit einer breiten Lücke, die vorher grün markiert wird
+    const curtain = (kind, gw = 46, vy = 62) => { const gx = clamp(rnd(30, 150), WALL + gw / 2, LW - WALL - gw / 2); for (let t = 0; t < 700; t += 70) L(t, () => { for (let k = -gw / 2 + 4; k <= gw / 2 - 4; k += 6) emit(gx + k, PLAT_Y - 1, '#8fd16a', 1, 3, 1, 0.1, { g: 0 }); }); L(700, () => { for (let x = WALL + 6; x < LW - WALL; x += 15) if (Math.abs(x - gx) > gw / 2) shoot(x, TOP + 4, kind, 0, vy); sfx.play('launch'); }); };
+    const bank = (n, sp = 70, kind = 'seed') => { for (let i = 0; i < n; i++) L(i * 260, () => { const d = i % 2 ? 1 : -1; const s2 = shoot(e.x, e.y + 12, kind, d * sp * 0.8, sp * 0.55); s2.bounce = 2; }); };
+    const spinner = (n, arms, sp, kind = 'spiral') => { for (let i = 0; i < n; i++) L(i * 140, () => { for (let a2 = 0; a2 < arms; a2++) { const a = i * 0.38 + a2 * Math.PI * 2 / arms; const vy = Math.sin(a) * sp; if (vy > 8) shoot(e.x, e.y, kind, Math.cos(a) * sp, vy); } }); sfx.play('launch'); };
+    const summon = (k, n = 2) => { if (Rm.enemies.length < 10) for (let i = 0; i < n; i++) { const dx = (i - (n - 1) / 2) * 40; const s2 = addEnemy(k, e.x + dx, e.y + 24); s2.hx = clamp(e.x + dx, 18, 162); s2.hy = e.y + 30; } sfx.play('roar'); };
+    const A = [];
     switch (e.k) {
-      case 'koenig_knoll': [() => fan(ph2 ? 7 : 5, 62), () => summon(ph2 ? pick(['ruebi', 'huepfer', 'knuffel']) : 'huepfer'), () => rain(ph2 ? 5 : 3)][m](); break;
-      case 'baron_blubber': [
-        () => { for (let i = 0; i < (ph2 ? 7 : 5); i++) { const s2 = shoot(rnd(30, 150), e.y + 10, 'bubble', rnd(-15, 15), 28 + rnd(0, 12)); s2.wob = rnd(0, 6); } sfx.play('pop'); },
-        () => { const gap = (Math.random() * 7) | 0; for (let i = 0; i < 9; i++) if (Math.abs(i - gap) > (ph2 ? 0 : 1)) shoot(18 + i * 18, TOP + 6, 'seed', 0, 58); sfx.play('launch'); },
-        () => summon(pick(['schwebsi', 'blubbser', 'quallo']))][m](); break;
-      case 'herzog_hartschale': [
-        () => { e.shellT = 2.6; for (let i = 0; i < (ph2 ? 12 : 8); i++) { const a = i / (ph2 ? 12 : 8) * Math.PI * 2; shoot(e.x, e.y, 'shard', Math.cos(a) * 55, Math.sin(a) * 55); } sfx.play('armor'); },
-        () => rain(ph2 ? 6 : 4, 'shard'),
-        () => summon(pick(['steinbeisser', 'keksquell', 'knallknolle']))][m](); break;
-      case 'grosswackler_wumbo': [
-        () => { e.windT = 2.4; e.windDir = Math.random() < 0.5 ? -1 : 1; banner('STURMBÖE!', 0.6); sfx.play('roar'); },
-        () => { for (let i = 0; i < (ph2 ? 4 : 3); i++) { const x = i === 0 ? plat.x : rnd(20, 160); setTimeout(() => { if (G.room !== Rm) return; for (let y = TOP; y < PLAT_Y; y += 5) emit(x + Math.sin(y) * 2, y, '#fff27a', 1, 4, 1, 0.12, { g: 0 }); }, 200 + i * 300); setTimeout(() => { if (G.room !== Rm) return; for (let y = TOP; y < PLAT_Y; y += 3) emit(x + rnd(-2, 2), y, '#ffe14d', 1, 10, 2, 0.25, { g: 0 }); sfx.play('zap'); if (Math.abs(plat.x - x) < plat.w / 2 + 3) hurt(1, 'blitz'); }, 900 + i * 300); } },
-        () => summon(pick(['windnase', 'wolkling', 'regentropf']))][m](); break;
-      case 'madam_miesmohn': [
-        () => spiral(ph2 ? 22 : 14),
-        () => { emit(e.x, e.y, '#ff86c8', 16, 60, 2); e.bx = rnd(50, 130); e.move = 0; fan(ph2 ? 6 : 4, 66); },
-        () => summon(pick(['clowni', 'popcorn', 'bluetenblob']))][m](); break;
-      case 'kaiserin_kuller': [
-        () => { rain(ph2 ? 6 : 4, 'shard'); if (ph3) spiral(12); },
-        () => { fan(ph2 ? 7 : 5, 70); if (ph3) setTimeout(() => G.room === Rm && fan(5, 80), 500); },
-        () => summon(pick(['kronenwaechter', 'ritterknolle', 'sternling']), ph2 ? 3 : 2)][m](); break;
+      case 'koenig_knoll': // Rübenregen, Samenbögen, Stampfer, Gefolge
+        A.push(() => { const n = ph2 ? 5 : 3; const xs = []; for (let i = 0; i < n; i++) xs.push(i === 0 ? plat.x : rnd(24, 156)); xs.forEach((x, i) => drop(x, 'rock', 700 + i * 260)); G.shake = 0.25; sfx.play('boom'); banner('RÜBENREGEN', 0.5); });
+        A.push(() => { lob(plat.x + rnd(-6, 6)); L(500, () => lob(clamp(plat.x + pick([-34, 34]), 20, 160))); if (ph2) L(1000, () => lob(plat.x)); });
+        A.push(() => { e.bx = rnd(50, 130); G.shake = 0.3; sfx.play('boom'); bank(ph2 ? 3 : 2, 72); });
+        A.push(() => summon(ph2 ? pick(['ruebi', 'huepfer', 'knuffel']) : 'huepfer'));
+        break;
+      case 'baron_blubber': // Blasenteppich, Tintenwelle mit Lücke, Tentakelsalve, Gefolge
+        A.push(() => { for (let i = 0; i < (ph2 ? 6 : 4); i++) { const s2 = shoot(rnd(30, 150), e.y + 12, 'bubble', rnd(-12, 12), 24 + rnd(0, 10)); s2.wob = rnd(0, 6); } sfx.play('pop'); });
+        A.push(() => { curtain('seed', ph2 ? 42 : 52, 58); banner('WELLE', 0.5); });
+        A.push(() => aimed(ph2 ? 3 : 2, 380, 72, 'ink'));
+        A.push(() => summon(pick(['schwebsi', 'blubbser', 'quallo'])));
+        break;
+      case 'herzog_hartschale': // Panzer + Splitterkranz nach unten, Kristallsäulen, Abpraller, Gefolge
+        A.push(() => { e.shellT = 2.4; const n = ph2 ? 7 : 5; for (let i = 0; i < n; i++) { const a = Math.PI * (0.15 + 0.7 * i / (n - 1)); shoot(e.x, e.y, 'shard', Math.cos(a) * 52, Math.sin(a) * 52); } sfx.play('armor'); });
+        A.push(() => { const k = ph2 ? 4 : 3; const xs = []; for (let i = 0; i < k; i++) xs.push(WALL + 14 + (i + Math.random() * 0.6) * (LW - 2 * WALL - 28) / k); xs.forEach((x, i) => { drop(x, 'shard', 650 + i * 120, 110); L(650 + i * 120 + 160, () => shoot(x, TOP + 4, 'shard', 0, 110)); }); banner('KRISTALLSÄULEN', 0.5); });
+        A.push(() => bank(ph2 ? 4 : 2, 78, 'shard'));
+        A.push(() => summon(pick(['steinbeisser', 'keksquell', 'knallknolle'])));
+        break;
+      case 'grosswackler_wumbo': // Sturmböe, Blitzeinschläge, Wolkenbruch, Gefolge
+        A.push(() => { e.windT = 2.2; e.windDir = Math.random() < 0.5 ? -1 : 1; banner('STURMBÖE!', 0.6); sfx.play('roar'); });
+        A.push(() => { for (let i = 0; i < (ph2 ? 3 : 2); i++) { const x = i === 0 ? plat.x : rnd(20, 160); L(i * 450, () => { warn(x, 14, 650); for (let y = TOP; y < PLAT_Y; y += 6) emit(x + Math.sin(y) * 2, y, '#fff27a', 1, 4, 1, 0.5, { g: 0 }); }); L(i * 450 + 650, () => { for (let y = TOP; y < PLAT_Y; y += 3) emit(x + rnd(-2, 2), y, '#fffcf0', 1, 10, 2, 0.25, { g: 0 }); sfx.play('zap'); G.shake = 0.2; if (Math.abs(Rm.plat.x - x) < Rm.plat.w / 2 + 3) hurt(1, 'blitz'); }); } });
+        A.push(() => { for (let i = 0; i < (ph2 ? 10 : 7); i++) L(i * 180, () => { const s2 = shoot(rnd(20, 160), e.y + 8, 'seed', 0, 46); s2.wave = 18; s2.wf = 4; }); });
+        A.push(() => summon(pick(['windnase', 'wolkling', 'regentropf'])));
+        break;
+      case 'madam_miesmohn': // Wirbelsterne, Sprungfeder-Teleport mit Jonglierbällen, Ballonbomben, Gefolge
+        A.push(() => spinner(ph2 ? 9 : 6, 2, 52));
+        A.push(() => { emit(e.x, e.y, '#ff86c8', 16, 60, 2); e.bx = rnd(50, 130); e.move = 0; L(250, () => { lob(plat.x - 26, 'seed', 1.5); lob(plat.x + 26, 'seed', 1.8); if (ph2) lob(plat.x, 'seed', 2.1); }); });
+        A.push(() => { for (let i = 0; i < (ph2 ? 3 : 2); i++) L(i * 300, () => { const s2 = shoot(rnd(40, 140), e.y + 10, 'bubble', 0, 30); s2.wob = rnd(0, 6); s2.pop = 1.1 + Math.random() * 0.4; }); banner('BALLONBOMBEN', 0.5); });
+        A.push(() => summon(pick(['clowni', 'popcorn', 'bluetenblob'])));
+        break;
+      case 'kaiserin_kuller': // Sternenvorhang, Königssalve, Murmelorbit, Spiegelschüsse, Gefolge
+        A.push(() => { curtain('shard', ph3 ? 40 : 48, 66); });
+        A.push(() => { aimed(3, 220, 76); if (ph2) L(1100, () => aimed(3, 220, 80)); });
+        A.push(() => spinner(ph3 ? 10 : 7, 3, 50, 'seed'));
+        A.push(() => bank(ph2 ? 4 : 3, 80, 'shard'));
+        A.push(() => summon(pick(['kronenwaechter', 'ritterknolle', 'sternling']), ph2 ? 3 : 2));
+        break;
     }
+    // nie zweimal dasselbe Muster hintereinander
+    let m = Math.floor(Math.random() * A.length); if (m === e.lastM) m = (m + 1) % A.length; e.lastM = m; A[m]();
   }
   drawEnemy(e);
   e.sp.flash = e.fl > 0.3 ? 0.7 : e.telegraph && Math.floor(G.t * 10) % 2 ? 0.5 : 0;
@@ -1673,12 +1699,13 @@ function shopTabs(el) {
   t.children[0].onclick = () => { shopTab = 'm'; sfx.play('ui'); openMarbleShop(); }; t.children[1].onclick = () => { shopTab = 'p'; sfx.play('ui'); openMarbleShop(); };
   el.appendChild(t);
 }
-function platImg(P, scale = 1) { return `<span class="pimg" style="width:calc(var(--u)*${P.w * scale});height:calc(var(--u)*${12 * scale});background-image:url(assets/plat/${P.id}.png)"></span>`; }
+function platImg(P, scale = 1, hid = false) { const i = `<span class="pimg${hid ? ' hid' : ''}" style="width:calc(var(--u)*${P.w * scale});height:calc(var(--u)*${12 * scale});background-image:url(assets/plat/${P.id}.png)"></span>`; return hid ? `<span class="pimgw" style="--qs:${Math.max(5, 7 * scale)}">${i}<b>?</b></span>` : i; }
 const lvStars = (lv) => `<span class="lvs">${IC('star_on').repeat(lv)}${IC('star_off').repeat(5 - lv)}</span>`;
 function platCard(P, extra = {}) {
   const lv = platLv(P.id), R = RAR[P.rar];
   const I = lv ? platInst(P.id) : P;
   const mods = [I.w !== 32 ? chip(UIC('st_level'), 'Breite ' + I.w, '#c9cbd6') : '', P.speed ? chip(UIC('st_tempo'), 'Tempo ' + Math.round(P.speed * 100) + '%', '#6fd0f0') : '', I.dmg && Math.abs(I.dmg - 1) > 0.01 ? chip(UIC('st_dmg'), 'Schaden ' + Math.round(I.dmg * 100) + '%', I.dmg >= 1 ? '#8fd16a' : '#ff5a6e') : ''].join('');
+  if (!lv && !extra.tag) return uCard({ icon: 'assets/ui/i_hilfe.png', color: '#8b8b9a', title: '???', tag: 'IM AUTOMATEN', text: 'Noch nicht entdeckt. Zieh sie im Plattform-Automaten!', after: `<span class="chips"><span class="bdg rb" style="--rc:${R.color}">${R.name.toUpperCase()}</span></span>` });
   return uCard({ icon: `assets/plat/thumb/${P.id}.png`, color: lv ? P.col : '#8b8b9a', title: P.name, tag: extra.tag || (lv ? 'STUFE ' + lv + '/5' : 'IM AUTOMATEN'), text: P.text, after: `<span class="chips"><span class="bdg rb" style="--rc:${R.color}">${R.name.toUpperCase()}</span>${lv ? lvStars(lv) : ''}${mods}</span>` });
 }
 function openPlatShop() {
@@ -1687,9 +1714,9 @@ function openPlatShop() {
   const cnt = PLATFORMS.filter((q) => platLv(q.id)).length;
   openDialog({ head: 'Plattformen', sub: `${cnt}/${PLATFORMS.length} gesammelt`, noAuto: true, mount: (el) => {
     shopTabs(el);
-    el.insertAdjacentHTML('beforeend', `<div class="show"><div class="pstage">${platImg(P, 2.4)}</div>${platCard(P)}</div>`);
+    el.insertAdjacentHTML('beforeend', `<div class="show"><div class="pstage">${platImg(P, 2.4, !own)}</div>${platCard(P)}</div>`);
     const strip = document.createElement('div'); strip.className = 'strip';
-    PLATFORMS.forEach((q, i) => { const d = document.createElement('div'); const lv = platLv(q.id); d.className = 'tile' + (i === platSel ? ' sel' : '') + (!lv ? ' off' : ''); d.style.borderColor = RAR[q.rar].color; d.innerHTML = `<div class="ptile">${platImg(q, 0.62)}</div><div class="n">${q.name}</div>` + (!lv ? '<img class="lk2 px" src="assets/ui/i_lock.png">' : q.id === save.platSel ? '<span class="eqm"></span>' : ''); d.onclick = () => { platSel = i; sfx.play('ui'); openPlatShop(); }; strip.appendChild(d); });
+    PLATFORMS.forEach((q, i) => { const d = document.createElement('div'); const lv = platLv(q.id); d.className = 'tile' + (i === platSel ? ' sel' : '') + (!lv ? ' off' : ''); d.style.borderColor = RAR[q.rar].color; d.innerHTML = `<div class="ptile">${platImg(q, 0.62, !lv)}</div><div class="n">${lv ? q.name : '???'}</div>` + (!lv ? '' : q.id === save.platSel ? '<span class="eqm"></span>' : ''); d.onclick = () => { platSel = i; sfx.play('ui'); openPlatShop(); }; strip.appendChild(d); });
     el.appendChild(strip); requestAnimationFrame(() => { const t = strip.children[platSel]; if (t) strip.scrollLeft = t.offsetLeft - strip.clientWidth / 2 + t.clientWidth / 2; });
   }, buttons: [
     { label: 'Zurück', cls: 'gray', fn: () => { closeDialog(); showTitle(); } },
