@@ -26,7 +26,17 @@ const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = (Mat
 const SAVE_KEY = 'bounceyard_rogue_v1';
 const save = Object.assign({ glanz: 0, unlocked: { nib: true }, best: 0, runs: 0, wins: 0, sel: 'nib', sound: true, inv: null, cores: 0, book: {}, ws: {}, uidN: 1, selU: null, plats: { moos: true }, platSel: 'moos' }, (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } })());
 function addInv(g) { const uid = save.uidN++; save.inv.push({ uid, g }); save.book[g.id] = g; return uid; }
+const FREE_PLATS = ['moos', 'kissen', 'breit', 'nadel'];
+const platLv = (id) => (save.plats[id] === true ? 1 : save.plats[id] || 0);
+function platInst(id) {
+  const B = PLAT_BY[id] || PLAT_BY.moos, lv = Math.max(1, platLv(B.id)), P = { ...B, lv }, k = lv - 1;
+  P.dmg = (B.dmg || 1) * (1 + 0.06 * k); P.w = B.w + k;
+  if (B.gun) P.gun = B.gun * (1 - 0.08 * k); if (B.ghost) P.ghost = Math.max(5, B.ghost - 1.5 * k); if (B.heal) P.heal = Math.max(8, B.heal - 2 * k);
+  if (B.zap && lv >= 4) P.zap = 2; if (B.mortar && lv >= 5) P.mortar = 1; if (B.drill && lv >= 3) P.drill = 2; if (B.bounceCharge && lv >= 3) P.bounceCharge = B.bounceCharge + 1;
+  P.splitMax = 4 + Math.floor(k / 2); return P;
+}
 function initMeta() {
+  for (const id of FREE_PLATS) if (!platLv(id)) save.plats[id] = 1;
   if (!save.inv) { save.inv = []; for (const k of Object.keys(save.unlocked)) if (BASE_BY[k]) addInv(BASE_BY[k]); }
   if (!save.inv.length) { save.unlocked.nib = true; addInv(BASE_BY.nib); }
   if (!save.inv.some((x) => x.uid === save.selU)) save.selU = save.inv[0].uid;
@@ -122,7 +132,7 @@ function synergiesFor(k) { return SYNERGIES.filter((x) => (x.a === k && lvl(x.b)
 function newRun(g) {
   const st = gStats(g); const m = { name: g.name, dmg: st.dmg, speed: st.speed, color: g.col, hearts: st.hearts + ws('herz') };
   save.book[g.id] = g;
-  const P = PLAT_BY[save.platSel] || PLAT_BY.moos; if (P.gold) m.hearts = Math.max(1, m.hearts - 1);
+  const P = platInst(save.platSel || 'moos'); if (P.gold) m.hearts = Math.max(1, m.hearts - 1);
   G.run = { g, P, mk: g.key, m, hearts: m.hearts, maxHearts: m.hearts, cores: 0, eggs: 0, rerolls: ws('reroll'), coins: 25 * ws('gold'), pu: {}, order: [], kills: 0, rooms: 0, glanz: 0, map: genMap(), node: null, floor: 0, chapter: 0, vampKills: 0 };
   save.runs++; persist();
   if (ws('start')) { const k = pick(Object.keys(POWERUPS).filter((k) => POWERUPS[k].r === 'common')); applyPU(k); }
@@ -523,6 +533,8 @@ function hitEnemy(e, b, dmg, src = 'ball') {
   if (src === 'ball' && b) {
     if (lvl('feuer')) { e.burn = 3; fx('feuer'); }
     if (b && b.lava > 0) e.burn = Math.max(e.burn, 3);
+    if (b && b.rb) { if (b.rb === 'feuer') e.burn = Math.max(e.burn, 3); if (b.rb === 'gift') e.poison = Math.min(10, (e.poison || 0) + 2); if (b.rb === 'eis') e.slow = Math.max(e.slow || 0, 2); if (b.rb === 'blitz' && src === 'ball') chain(e, 1); }
+    if (b && src === 'ball' && PL().chainHit) chain(e, 1);
     if (lvl('gift')) { e.poison = Math.min(10, e.poison + lvl('gift')); fx('gift'); }
     if (lvl('frost')) { e.slow = 1.5 + lvl('frost'); fx('frost'); }
     if (lvl('blitz')) { chain(e, lvl('blitz')); fx('blitz'); }
@@ -909,6 +921,7 @@ function updateExtras(dt) {
 function updateBall(b, dt) {
   const Rm = G.room, plat = Rm.plat;
   b.t += dt; b.boost -= dt; b.ram -= dt; b.lava = (b.lava || 0) - dt; b.hitAnim -= dt; b.skillAnim -= dt;
+  if (b.rb && !b.caught && Math.random() < 0.5) emit(b.x, b.y, { feuer: '#ff7a2a', gift: '#9be070', eis: '#9fe0ff', blitz: '#fff27a' }[b.rb], 1, 6, 1, 0.25, { g: 0 });
   if (b.main && !b.caught && Rm.mom >= 3) { const m = Math.min(12, Rm.mom); const cols = m >= 10 ? ['#ff4a7a', '#c08bff', '#fffcf0'] : m >= 6 ? ['#ff7a2a', '#ff2a3a', '#ffd45c'] : ['#ffd45c', '#fff27a']; for (let i = 0; i < 1 + (m >> 2); i++) emit(b.x + rnd(-2, 2), b.y + rnd(-2, 2), pick(cols), 1, 8 + m, m >= 6 ? 2 : 1, 0.25 + m * 0.02, { g: -10 }); }
   if (!b.main) { b.life -= dt; if (b.life <= 0) { b.dead = true; } }
   if (b.caught) {
@@ -918,7 +931,7 @@ function updateBall(b, dt) {
     const steps = Math.ceil(S * dt / 3);
     const h = dt / steps;
     for (let i = 0; i < steps && !b.caught && !b.dead; i++) {
-      if (!(b.ram > 0)) b.vy += GRAV * h;
+      if (!(b.ram > 0)) b.vy += GRAV * h * (PL().lowGrav || 1);
       // Magnet der Plattform
       if (b.main && PL().pull && b.vy > 0 && b.y > 120) b.vx += Math.sign(plat.x - b.x) * 380 * h;
       if (b.main && PL().homing) { const t = nearestEnemy(b.x, b.y); if (t && t.y < b.y) { const a1 = Math.atan2(b.vy, b.vx), a2 = Math.atan2(t.y - b.y, t.x - b.x); let da = a2 - a1; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2; const na = a1 + clamp(da, -1.4 * h, 1.4 * h); const v = Math.hypot(b.vx, b.vy); b.vx = Math.cos(na) * v; b.vy = Math.sin(na) * v; } }
@@ -1018,7 +1031,16 @@ function bounceMain(b, S) {
   if (P.catchAll && Rm.state !== 'clear') { b.caught = true; b.cx = clamp(b.x - plat.x, -plat.w / 2 + 3, plat.w / 2 - 3); b.vx = b.vy = 0; Rm.state = 'aim'; sfx.play('catch'); return; }
   if (P.bounceCharge) b.charge = Math.min(6, b.charge + P.bounceCharge);
   if (P.lava) { b.lava = 3; emit(b.x, b.y, '#ff7a2a', 8, 40); }
-  if (P.split && Rm.balls.filter((x) => !x.main).length < 4) { const a2 = -Math.PI / 2 + rnd(-0.7, 0.7); spawnBall(false, b.x, b.y - 4, Math.cos(a2) * S, Math.sin(a2) * S); }
+  if (P.split && Rm.balls.filter((x) => !x.main).length < (P.splitMax || 4)) { const a2 = -Math.PI / 2 + rnd(-0.7, 0.7); spawnBall(false, b.x, b.y - 4, Math.cos(a2) * S, Math.sin(a2) * S); }
+  plat.bounces = (plat.bounces || 0) + 1; const nb = plat.bounces;
+  if (P.shroom) { b.boost = Math.max(b.boost, 0.7); b.charge = Math.min(6, (b.charge || 0) + 1); emit(b.x, PLAT_Y, '#e8565f', 6, 40); }
+  if (P.heal && nb % P.heal === 0) { heal(1); emit(plat.x, PLAT_Y - 4, '#ff8fb0', 12, 40); }
+  if (P.frost) { for (const e of Rm.enemies) if (!e.dead && Math.abs(e.x - (b.x + b.vx * ((b.y - e.y) / Math.max(1, -b.vy)))) < 18) { e.slow = Math.max(e.slow || 0, 2.5); emit(e.x, e.y, '#9fe0ff', 4, 20); } }
+  if (P.zap && nb % P.zap === 0) { const t = Rm.enemies.filter((e) => !e.dead && !e.ghost).sort((a, c) => dist(a.x, a.y, b.x, b.y) - dist(c.x, c.y, b.x, b.y))[0]; if (t) { for (let i = 0; i < 8; i++) emit(b.x + (t.x - b.x) * i / 8, b.y + (t.y - b.y) * i / 8, '#fff27a', 1, 6, 1, 0.2, { g: 0 }); hitEnemy(t, null, 1, 'chain'); chain(t, 2); } }
+  if (P.mortar && nb % P.mortar === 0) { const t = pick(Rm.enemies.filter((e) => !e.dead && !e.ghost)); if (t) { const sx = plat.x, sy = PLAT_Y - 6, tx = t.x, ty = t.y; sfx.play('launch'); for (let i = 1; i <= 6; i++) setTimeout(() => G.room === Rm && emit(sx + (tx - sx) * i / 6, sy + (ty - sy) * i / 6 - Math.sin(i / 6 * Math.PI) * 30, '#ff7a2a', 2, 10, 1, 0.3, { g: 0 }), i * 50); setTimeout(() => G.room === Rm && boom(tx, ty, 18, baseDmg(), 'mortar'), 340); } }
+  if (P.drill) b.pierce = Math.max(b.pierce, P.drill);
+  if (P.rainbow) { b.rb = pick(['feuer', 'gift', 'eis', 'blitz']); }
+  if (P.prism) { for (let i = -1; i <= 1; i++) shoot(b.x + i * 4, PLAT_Y - 6, 'pellet', i * 60, -200, false, 1); emit(b.x, PLAT_Y - 4, '#c08bff', 10, 50); }
   if (P.portal) { ring(b.x, b.y, '#c08bff'); b.x = rnd(24, 156); b.y = TOP + 10; b.vy = Math.abs(b.vy) * 0.8; ring(b.x, b.y, '#c08bff'); sfx.play('zap'); }
   autoSkill('abprall');
   if (lvl('schrot')) fx('schrot');
@@ -1652,19 +1674,56 @@ function shopTabs(el) {
   el.appendChild(t);
 }
 function platImg(P, scale = 1) { return `<span class="pimg" style="width:calc(var(--u)*${P.w * scale});height:calc(var(--u)*${12 * scale});background-image:url(assets/plat/${P.id}.png)"></span>`; }
+const lvStars = (lv) => `<span class="lvs">${IC('star_on').repeat(lv)}${IC('star_off').repeat(5 - lv)}</span>`;
+function platCard(P, extra = {}) {
+  const lv = platLv(P.id), R = RAR[P.rar];
+  const I = lv ? platInst(P.id) : P;
+  const mods = [I.w !== 32 ? chip(UIC('st_level'), 'Breite ' + I.w, '#c9cbd6') : '', P.speed ? chip(UIC('st_tempo'), 'Tempo ' + Math.round(P.speed * 100) + '%', '#6fd0f0') : '', I.dmg && Math.abs(I.dmg - 1) > 0.01 ? chip(UIC('st_dmg'), 'Schaden ' + Math.round(I.dmg * 100) + '%', I.dmg >= 1 ? '#8fd16a' : '#ff5a6e') : ''].join('');
+  return uCard({ icon: `assets/plat/thumb/${P.id}.png`, color: lv ? P.col : '#8b8b9a', title: P.name, tag: extra.tag || (lv ? 'STUFE ' + lv + '/5' : 'IM AUTOMATEN'), text: P.text, after: `<span class="chips"><span class="bdg rb" style="--rc:${R.color}">${R.name.toUpperCase()}</span>${lv ? lvStars(lv) : ''}${mods}</span>` });
+}
 function openPlatShop() {
-  const P = PLATFORMS[platSel]; const own = save.plats[P.id]; const eq = save.platSel === P.id;
-  const mods = [P.w !== 32 ? chip(UIC('st_level'), 'Breite ' + P.w, '#c9cbd6') : '', P.speed ? chip(UIC('st_tempo'), 'Tempo ' + Math.round(P.speed * 100) + '%', '#6fd0f0') : '', P.dmg ? chip(UIC('st_dmg'), 'Schaden ' + Math.round(P.dmg * 100) + '%', P.dmg >= 1 ? '#8fd16a' : '#ff5a6e') : ''].join('');
-  openDialog({ head: 'Laden', sub: `${IC('glanz')} ${save.glanz} Glanz`, noAuto: true, mount: (el) => {
+  initMeta();
+  const P = PLATFORMS[platSel]; const own = platLv(P.id) > 0; const eq = save.platSel === P.id;
+  const cnt = PLATFORMS.filter((q) => platLv(q.id)).length;
+  openDialog({ head: 'Plattformen', sub: `${cnt}/${PLATFORMS.length} gesammelt`, noAuto: true, mount: (el) => {
     shopTabs(el);
-    el.insertAdjacentHTML('beforeend', `<div class="show"><div class="pstage">${platImg(P, 2.4)}</div>${uCard({ icon: `assets/plat/${P.id}.png`, color: own ? P.col : '#8b8b9a', title: P.name, tag: eq ? 'AUSGERÜSTET' : own ? 'BESITZT DU' : P.cost + ' GLANZ', text: P.text, after: mods ? `<span class="chips">${mods}</span>` : '' })}</div>`);
+    el.insertAdjacentHTML('beforeend', `<div class="show"><div class="pstage">${platImg(P, 2.4)}</div>${platCard(P)}</div>`);
     const strip = document.createElement('div'); strip.className = 'strip';
-    PLATFORMS.forEach((q, i) => { const d = document.createElement('div'); d.className = 'tile' + (i === platSel ? ' sel' : '') + (!save.plats[q.id] ? ' off' : ''); d.innerHTML = `<div class="ptile">${platImg(q, 0.62)}</div><div class="n">${q.name}</div>` + (!save.plats[q.id] ? '<img class="lk2 px" src="assets/ui/i_lock.png">' : save.platSel === q.id ? '<img class="lk2 px" src="assets/ui/st_mut.png">' : ''); d.onclick = () => { platSel = i; sfx.play('ui'); openPlatShop(); }; strip.appendChild(d); });
+    PLATFORMS.forEach((q, i) => { const d = document.createElement('div'); const lv = platLv(q.id); d.className = 'tile' + (i === platSel ? ' sel' : '') + (!lv ? ' off' : ''); d.style.borderColor = RAR[q.rar].color; d.innerHTML = `<div class="ptile">${platImg(q, 0.62)}</div><div class="n">${q.name}</div>` + (!lv ? '<img class="lk2 px" src="assets/ui/i_lock.png">' : q.id === save.platSel ? '<span class="eqm"></span>' : ''); d.onclick = () => { platSel = i; sfx.play('ui'); openPlatShop(); }; strip.appendChild(d); });
     el.appendChild(strip); requestAnimationFrame(() => { const t = strip.children[platSel]; if (t) strip.scrollLeft = t.offsetLeft - strip.clientWidth / 2 + t.clientWidth / 2; });
   }, buttons: [
     { label: 'Zurück', cls: 'gray', fn: () => { closeDialog(); showTitle(); } },
-    own ? { label: eq ? 'Ausgerüstet' : 'Ausrüsten', cls: eq ? 'gray' : '', fn: () => { save.platSel = P.id; persist(); sfx.play('pickup'); openPlatShop(); } }
-        : { label: `Freischalten · ${P.cost}`, glanz: true, cls: save.glanz >= P.cost ? '' : 'gray', fn: () => { if (save.glanz < P.cost) return sfx.play('ui'); save.glanz -= P.cost; save.plats[P.id] = true; save.platSel = P.id; persist(); sfx.play('win'); openPlatShop(); } },
+    ...(own && !eq ? [{ label: 'Ausrüsten', cls: '', fn: () => { save.platSel = P.id; persist(); sfx.play('pickup'); openPlatShop(); } }] : []),
+    { label: 'Automat', fn: () => openGacha('p') },
+  ] });
+}
+// ===== Plattform-Automat
+const PG_1 = 15, PG_10 = 135, PPITY = 30;
+function platRoll(minIdx = 0) {
+  const keys = RAR_KEYS.slice(minIdx); const tot = keys.reduce((a, k) => a + RAR[k].rate, 0);
+  let v = Math.random() * tot, rk = keys[0]; for (const k of keys) { v -= RAR[k].rate; if (v <= 0) { rk = k; break; } }
+  return pick(PLATFORMS.filter((q) => q.rar === rk));
+}
+function platPull(n) {
+  const cost = n === 10 ? PG_10 : PG_1; if (save.glanz < cost) { sfx.play('ui'); return null; }
+  save.glanz -= cost; const out = [];
+  for (let i = 0; i < n; i++) { save.ppity = (save.ppity || 0) + 1; let P = save.ppity >= PPITY ? platRoll(2) : platRoll(); if (RAR_KEYS.indexOf(P.rar) >= 2) save.ppity = 0; out.push(P); }
+  if (n === 10 && !out.some((P) => RAR_KEYS.indexOf(P.rar) >= 2)) out[9] = platRoll(2);
+  const res = out.map((P) => { const lv = platLv(P.id); let r; if (!lv) r = { P, rar: P.rar, tag: 'NEU!' }; else if (lv < 5) r = { P, rar: P.rar, tag: 'STUFE ' + (lv + 1) + '!' }; else { save.glanz += 6; r = { P, rar: P.rar, tag: 'MAX · +6 GLANZ' }; } save.plats[P.id] = Math.min(5, lv + 1); return r; });
+  persist(); return res;
+}
+function platReveal(res) {
+  $('msgRow').style.visibility = '';
+  const one = res.length === 1, r = res[0];
+  openDialog({ head: one ? (r.tag === 'NEU!' ? 'Neue Plattform!' : 'Plattform gezogen') : '10 Plattformen!', noAuto: true, mount: (el) => {
+    if (one) { el.insertAdjacentHTML('beforeend', `<div class="reveal" style="--rc:${RAR[r.rar].color}"><div class="show"><div class="pstage">${platImg(r.P, 2.4)}</div>${platCard(r.P, { tag: r.tag })}</div></div>`); return; }
+    const w = document.createElement('div'); w.className = 'mgrid'; w.style.gridTemplateColumns = 'repeat(3, 1fr)';
+    for (const x of res) { const d = document.createElement('div'); d.className = 'tile'; d.style.borderColor = RAR[x.rar].color; d.innerHTML = `<div class="ptile">${platImg(x.P, 0.62)}</div><div class="n">${x.P.name}</div><div class="n" style="color:${RAR[x.rar].color}">${x.tag}</div>`; d.onclick = () => openDialog({ head: x.P.name, noAuto: true, mount: (e2) => e2.insertAdjacentHTML('beforeend', platCard(x.P)), buttons: [{ label: 'Zurück', fn: () => platReveal(res) }] }); w.appendChild(d); }
+    el.appendChild(w);
+  }, buttons: [
+    { label: 'OK', cls: 'gray', fn: () => { closeDialog(); showTitle(); } },
+    ...(one ? [{ label: 'Ausrüsten', cls: 'gray', fn: () => { save.platSel = r.P.id; persist(); closeDialog(); showTitle(); } }] : []),
+    { label: 'Nochmal', fn: () => openGacha('p') },
   ] });
 }
 // ===== Murmelautomat (Gacha)
@@ -1689,12 +1748,13 @@ function gachaPull(n) {
   for (const g of out) { const isNew = !save.book[g.id]; g._new = isNew; save.unlocked[g.key] = true; g._uid = addInv({ ...g }); }
   persist(); return out;
 }
+const PIMG = PLATFORMS.map((q) => { const im = new Image(); im.src = `assets/plat/${q.id}.png`; return im; });
 function drawGacha(ctx, A, t) {
   const sh = A.ph === 'crank' ? Math.round(Math.sin(t * 60)) : 0;
   ctx.clearRect(0, 0, 140, 200);
   ctx.fillStyle = 'rgba(26,18,36,0.5)'; ctx.beginPath(); ctx.ellipse(62, 196, 54, 4, 0, 0, Math.PI * 2); ctx.fill();
   ctx.drawImage(AM.cap, 28 + sh, 2);
-  for (const b of A.balls) { const j = A.ph === 'crank' ? Math.round(Math.random() * 2 - 1) : 0; ctx.drawImage(AM.balls[b.c], b.x - 6 + sh + j, b.y - 6 - Math.abs(j)); }
+  for (const b of A.balls) { const j = A.ph === 'crank' ? Math.round(Math.random() * 2 - 1) : 0; if (A.pm) { const im = PIMG[b.c % PIMG.length]; if (im.complete) ctx.drawImage(im, 0, 0, im.width / 3, im.height, b.x - 8 + sh + j, b.y - 3 - Math.abs(j), 16, 6); } else ctx.drawImage(AM.balls[b.c], b.x - 6 + sh + j, b.y - 6 - Math.abs(j)); }
   ctx.drawImage(AM.globe, 6 + sh, 18);
   ctx.drawImage(AM.body, 8 + sh, 112);
   const cf = A.ph === 'crank' ? Math.floor(t * 14) % 4 : 0; ctx.drawImage(AM.crank[cf], 106 + sh, 120 + (A.ph === 'idle' && Math.floor(t * 2) % 2 ? -1 : 0));
@@ -1707,32 +1767,32 @@ function drawGacha(ctx, A, t) {
   }
 }
 AM.rcap = {}; RAR_KEYS.forEach((k) => (AM.rcap[k] = UI('cap_r_' + k)));
-function openGacha() {
-  initMeta();
-  openDialog({ head: 'Murmelautomat', sub: `${IC('glanz')} ${save.glanz} Glanz`, noAuto: true, mount: (el) => {
+function openGacha(mode = 'm') {
+  initMeta(); const PM = mode === 'p';
+  openDialog({ head: PM ? 'Plattform-Automat' : 'Murmelautomat', sub: `${IC('glanz')} ${save.glanz} Glanz`, noAuto: true, mount: (el) => {
     shopTabs(el);
     const rates = document.createElement('div'); rates.className = 'chips'; rates.style.justifyContent = 'center';
-    rates.innerHTML = `<span class="bdg rb" style="--rc:#ffcf4a">LEGENDÄR SPÄTESTENS IN ${50 - (save.pity || 0)} ZÜGEN</span>` + RAR_KEYS.map((k) => `<span class="bdg rb" style="--rc:${RAR[k].color}">${RAR[k].name.toUpperCase()} ${RAR[k].rate}%</span>`).join('');
+    rates.innerHTML = (PM ? `<span class="bdg rb" style="--rc:#b07cff">EPISCH SPÄTESTENS IN ${PPITY - (save.ppity || 0)} ZÜGEN</span>` : `<span class="bdg rb" style="--rc:#ffcf4a">LEGENDÄR SPÄTESTENS IN ${50 - (save.pity || 0)} ZÜGEN</span>`) + RAR_KEYS.map((k) => `<span class="bdg rb" style="--rc:${RAR[k].color}">${RAR[k].name.toUpperCase()} ${RAR[k].rate}%</span>`).join('');
     const cv = document.createElement('canvas'); cv.width = 140; cv.height = 200; cv.className = 'gacha';
     el.appendChild(cv); el.appendChild(rates);
     const ctx = cv.getContext('2d');
-    const A = { ph: 'idle', t: 0, balls: pilePositions(20).map(([x, y]) => ({ x: x - 30, y: y - 32, c: (Math.random() * 7) | 0 })), best: 'normal' };
+    const A = { ph: 'idle', t: 0, pm: PM, balls: (PM ? pilePositions(20).map(([x, y], i) => [x + ((i % 2) * 2 - 1) * 2, y - (i >> 2)]) : pilePositions(20)).map(([x, y]) => ({ x: x - 30, y: y - 32, c: (Math.random() * (PM ? 30 : 7)) | 0 })), best: 'normal' };
     G.gacha = A; let lt = performance.now();
     const loop = (now) => {
       if (!cv.isConnected) { if (G.gacha === A) G.gacha = null; return; }
       const dt = Math.min(0.05, (now - lt) / 1000); lt = now; A.t += dt;
       if (A.ph === 'crank' && A.t > 0.75) { A.ph = 'out'; A.t = 0; sfx.play('launch'); }
       if (A.ph === 'out' && A.t > 0.7) { A.ph = 'pop'; A.t = 0; sfx.play(RAR_KEYS.indexOf(A.best) >= 3 ? 'win' : 'pop'); }
-      if (A.ph === 'pop' && A.t > 0.45) { A.ph = 'done'; gachaReveal(A.res); return; }
+      if (A.ph === 'pop' && A.t > 0.45) { A.ph = 'done'; (PM ? platReveal : gachaReveal)(A.res); return; }
       drawGacha(ctx, A, now / 1000); requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
-    A.start = (n) => { if (A.ph !== 'idle') return; const res = gachaPull(n); if (!res) return; A.res = res; A.best = res.reduce((m, g) => (RAR_KEYS.indexOf(g.rar) > RAR_KEYS.indexOf(m) ? g.rar : m), 'normal'); A.ph = 'crank'; A.t = 0; sfx.play('ui'); $('msgRow').style.visibility = 'hidden'; };
+    A.start = (n) => { if (A.ph !== 'idle') return; const res = (PM ? platPull : gachaPull)(n); if (!res) return; A.res = res; A.best = res.reduce((m, g) => (RAR_KEYS.indexOf(g.rar) > RAR_KEYS.indexOf(m) ? g.rar : m), 'normal'); A.ph = 'crank'; A.t = 0; sfx.play('ui'); $('msgRow').style.visibility = 'hidden'; };
     cv.onclick = () => A.start(1);
   }, buttons: [
     { label: 'Zurück', cls: 'gray', fn: () => { closeDialog(); showTitle(); } },
-    { label: `1× · ${GACHA_1}`, glanz: true, cls: save.glanz >= GACHA_1 ? '' : 'gray', fn: () => G.gacha && G.gacha.start(1) },
-    { label: `10× · ${GACHA_10}`, glanz: true, cls: save.glanz >= GACHA_10 ? '' : 'gray', fn: () => G.gacha && G.gacha.start(10) },
+    { label: `1× · ${PM ? PG_1 : GACHA_1}`, glanz: true, cls: save.glanz >= (PM ? PG_1 : GACHA_1) ? '' : 'gray', fn: () => G.gacha && G.gacha.start(1) },
+    { label: `10× · ${PM ? PG_10 : GACHA_10}`, glanz: true, cls: save.glanz >= (PM ? PG_10 : GACHA_10) ? '' : 'gray', fn: () => G.gacha && G.gacha.start(10) },
   ] });
 }
 function gachaReveal(res) {
@@ -1858,7 +1918,7 @@ function openDaily() {
   const hist = Object.entries(save.daily).sort((a, b) => (a[0] < b[0] ? 1 : -1)).slice(0, 7);
   openDialog({ head: 'Tageslauf', sub: `${D.key} · für alle gleich`, noAuto: true, mount: (el) => {
     el.insertAdjacentHTML('beforeend', marbleCard(D.g, { badge: bdg(UIC('i_daily'), 'HEUTE') }));
-    el.insertAdjacentHTML('beforeend', `<div class="dl">${uCard({ icon: `assets/plat/${D.P.id}.png`, color: D.P.col, title: D.P.name, tag: 'PLATTFORM', text: D.P.text })}${relCard(D.relic).html}<div class="chips" style="justify-content:center">${D.pus.map((k) => `<span class="chip" style="--cc:${RARITY[POWERUPS[k].r].color}"><img class="px" src="assets/icons/${k}.png">${POWERUPS[k].name}</span>`).join('')}</div></div>`);
+    el.insertAdjacentHTML('beforeend', `<div class="dl">${uCard({ icon: `assets/plat/thumb/${D.P.id}.png`, color: D.P.col, title: D.P.name, tag: 'PLATTFORM', text: D.P.text })}${relCard(D.relic).html}<div class="chips" style="justify-content:center">${D.pus.map((k) => `<span class="chip" style="--cc:${RARITY[POWERUPS[k].r].color}"><img class="px" src="assets/icons/${k}.png">${POWERUPS[k].name}</span>`).join('')}</div></div>`);
     el.insertAdjacentHTML('beforeend', tiles([{ ic: UIC('st_level'), v: best ? best.fl + '/60' : '0', l: 'Heute bestes' }, { ic: UIC('st_kill'), v: best ? best.kills : '0', l: 'Besiegt' }, ...hist.filter((x) => x[0] !== D.key).slice(0, 4).map(([k, v]) => ({ ic: UIC('i_daily'), v: v.fl + '/60', l: k.slice(5) }))]));
   }, buttons: [{ label: 'Zurück', cls: 'gray', fn: () => { closeDialog(); showTitle(); } }, { label: best ? 'Nochmal' : 'Starten', fn: () => startDaily(D) }] });
 }
@@ -1921,7 +1981,7 @@ manager.onLoad = () => { if (booted) return; booted = true; buildBg(); buildTitl
 window.__BY = {
   G, save,
   setAuto(v) { G.auto = v; },
-  glanz(n) { save.glanz += n; persist(); }, victory() { victory(); }, coins(n) { for (let i = 0; i < n; i++) dropCoin(90, 120); }, relic(k) { giveRelic(k); }, relicChoice() { relicChoice('Test', () => {}); },
+  glanz(n) { save.glanz += n; persist(); }, setPlat(id) { save.plats[id] = save.plats[id] || 1; save.platSel = id; persist(); }, victory() { victory(); }, coins(n) { for (let i = 0; i < n; i++) dropCoin(90, 120); }, relic(k) { giveRelic(k); }, relicChoice() { relicChoice('Test', () => {}); },
   pat(p, k = 'seed') { const e = G.room.enemies.find((x) => !x.dead); if (e) shotPattern(e, p, k, 70); },
   start(mk = 'nib') { save.unlocked[mk] = true; newRun(BASE_BY[mk]); },
   newRunG(g) { newRun(g); }, platShop: () => { shopTab = 'p'; openMarbleShop(); }, PLAT_BY, FXC, shop: () => openMarbleShop(), title: () => showTitle(), map: () => showMap(), fuse, BASE_BY, kiste: () => openKiste(), fusion: () => openFusion(), werk: () => openWerkstatt(), buch: () => openBuch(), FZ, initMeta,
