@@ -1,5 +1,5 @@
 // BOUNCEYARD – Roguelike-Ricochet-Breakout (Prototyp Kapitel 1: Kullerhain)
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 import { LW, LH, renderer, scene, camera, manager, tex, img, canvasTex, Sprite, rect, placeRect, quad, emit, updateParticles, clearParticles, FXQ } from './pixel.js';
 import { MARBLES, ENEMIES, POWERUPS, RARITY, EVENTS, BOSS, SYNERGIES, BIOMES, EVENT_LEVELS, PLATFORMS } from './content.js';
 const PLAT_BY = Object.fromEntries(PLATFORMS.map((p) => [p.id, p]));

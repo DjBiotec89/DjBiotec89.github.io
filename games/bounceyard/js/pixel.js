@@ -1,5 +1,5 @@
 // BOUNCEYARD – Pixel-Renderer (Three.js). Interne Auflösung 180×320, 1 Bildpixel = 1 Spielpixel.
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.min.js';
 
 export const LW = 180, LH = 320, SCALE = 4;
 
