@@ -72,7 +72,14 @@ function drawGrass(g, w, h, seed = 1) {
 }
 function drawHedge(g, x, y, w, h) { for (let yy = y; yy < y + h; yy += 8) for (let xx = x; xx < x + w; xx += 8) g.drawImage(TILE.hedge, xx, yy); }
 const bgCache = {};
+function edgeBg(bi) {
+  const st = document.getElementById('stage'); if (!st) return; const r = st.getBoundingClientRect(), u = r.width / LW;
+  const b = document.body.style; b.backgroundImage = `url(assets/biomes/${BIOMES[bi].id}/wall.png)`; b.backgroundSize = `${8 * u}px ${8 * u}px`; b.backgroundPosition = `${r.left}px ${r.top}px`; b.backgroundRepeat = 'repeat'; b.imageRendering = 'pixelated';
+  edgeBg.bi = bi;
+}
+addEventListener('resize', () => edgeBg(edgeBg.bi || 0));
 function buildBg(bi = 0) {
+  edgeBg(bi);
   TILE = BT[bi];
   if (bgCache[bi]) { if (bgMesh) bgMesh.material.map = bgCache[bi]; else bgMesh = quad(bgCache[bi], 0, 0, LW, LH, 0); return; }
   const c = document.createElement('canvas'); c.width = LW; c.height = LH; const g = c.getContext('2d');

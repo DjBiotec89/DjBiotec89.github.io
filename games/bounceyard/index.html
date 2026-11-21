@@ -10,7 +10,7 @@
 <style>
 :root { --ink:#2b1d3a; --ink2:#3d2b52; --cream:#fffcf0; --pink:#ff8fa8; --gold:#ffd45c; --mint:#8fd16a; --sky:#6fd0f0; --red:#ff5a6e; }
 * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
-html,body { margin:0; height:100%; background:#1a1224; overflow:hidden; touch-action:none; font-family:'Press Start 2P', monospace; color:var(--cream); }
+html,body { margin:0; height:100%; background-color:#1a1224; overflow:hidden; touch-action:none; font-family:'Press Start 2P', monospace; color:var(--cream); }
 #wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
 #stage { position:relative; width:min(100vw, calc(100vh * 9 / 16)); aspect-ratio:9/16; --u:calc(min(100vw, calc(100vh * 9 / 16)) / 180); overflow:hidden; background:var(--ink); image-rendering:pixelated; }
 #stage canvas.gl, #mapCanvas { position:absolute; inset:0; width:100%; height:100%; image-rendering:pixelated; display:block; }
@@ -241,7 +241,7 @@ canvas.gacha { width:calc(var(--u)*126); height:calc(var(--u)*180); image-render
 .ft-n img { width:calc(var(--u)*16); height:calc(var(--u)*16); image-rendering:pixelated; border:calc(var(--u)*0.8) solid var(--rc); background:#241833; }
 .dl { display:flex; flex-direction:column; gap:calc(var(--u)*2); align-items:center; margin-top:calc(var(--u)*2); }
 </style>
-<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#2b1d3a"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#2b1d3a"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="BOUNCEYARD">
 </head>
 <body>
 <div id="wrap"><div id="stage">
