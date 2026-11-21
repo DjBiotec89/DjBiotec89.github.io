@@ -12,6 +12,7 @@ export class Audio {
   }
 
   unlock() {
+    if (this._track && this._track.paused) this._track.play().catch(() => {});
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -87,6 +88,20 @@ export class Audio {
   setMusic(on) {
     this.musicOn = on;
     if (this.musicGain) this.musicGain.gain.value = on ? 0.22 : 0;
+    if (this._track) this._track.muted = !on;
+  }
+  // Suno-Soundtrack: assets/music/<name>.mp3 – fehlt die Datei, läuft die eingebaute Synth-Musik
+  playTrack(name, worldIdx = 0, intense = false) {
+    if (this._trackName === name && this._track) return;
+    this._missing = this._missing || new Set();
+    if (this._missing.has(name)) { if (!(this._musicTimer && this._worldIdx === worldIdx && this._intense === intense)) { this.stopMusic(); this.startMusic(worldIdx, intense); this._intense = intense; } return; }
+    this.stopMusic();
+    this._trackName = name;
+    const a = new window.Audio(`assets/music/${name}.mp3`); a.loop = true; a.volume = 0.5; a.muted = !this.musicOn; a.preload = 'auto';
+    let ok = false;
+    a.addEventListener('canplay', () => { if (this._trackName !== name) return; ok = true; this._track = a; a.play().catch(() => {}); }, { once: true });
+    a.addEventListener('error', () => { this._missing.add(name); if (this._trackName !== name || ok) return; this._track = null; this.startMusic(worldIdx, intense); this._intense = intense; }, { once: true });
+    this._pending = a;
   }
 
   // Kleine generative Melodie pro Welt
@@ -124,5 +139,8 @@ export class Audio {
   stopMusic() {
     if (this._musicTimer) clearInterval(this._musicTimer);
     this._musicTimer = null;
+    if (this._track) { this._track.pause(); this._track = null; }
+    if (this._pending) { this._pending.src = ''; this._pending = null; }
+    this._trackName = null;
   }
 }

@@ -1,0 +1,3 @@
+Suno-Soundtrack hier ablegen (MP3, loopbar):
+titel.mp3, hain.mp3, bucht.mp3, stollen.mp3, wipfel.mp3, jahrmarkt.mp3, krone.mp3, boss.mp3, boss_finale.mp3, event.mp3
+Fehlt eine Datei, spielt das Spiel die eingebaute Synth-Musik.
