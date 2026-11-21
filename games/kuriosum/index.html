@@ -731,7 +731,7 @@ const GFX = (() => {
     loch: { body: 'void', c1: RED, c2: BONE, eyes: 1, rings: 3, shards: 8, scale: 1.15 },
     richter: { body: 'crystal', c1: BONE, c2: BRUISE, eyes: 3, rings: 3, shards: 10, scale: 1.22 },
     patient: { body: 'bloat', c1: BILE, c2: BLOOD, eyes: 7, tent: 8, thorns: 12, sat: 4, flies: 8, mouth: 1, scale: 1.22 },
-    prophet: { body: 'prophet', c1: ROT, c2: DIRT, rings: 1, shards: 4 },
+    prophet: { body: 'prophet', c1: ROT, c2: DIRT, scale: 1.2 },
     parasit: { body: 'parasite', c1: BILE, c2: FLESH, tent: 4, down: 1, scale: 1.3 },
     koenigin: { body: 'queen', c1: BRUISE, c2: BONE, rings: 1, shards: 6 },
     chirurg: { body: 'surgeon', c1: '#9fc4c0', c2: BLOOD, rings: 1 },
@@ -1146,14 +1146,16 @@ if(f>${o.flat ? '.8' : '.64'})c=vec3(.04,.024,.028);c=mix(c,vec3(1.),uFl*.7);gl_
       return {};
     },
     prophet(G, U, s) {
-      const POR = '#ddd3c1', PD = '#8f8573';
-      const hood = mesh(new THREE.SphereGeometry(1.05, 20, 14, Math.PI + .2, Math.PI - .4, 0, Math.PI * .85), vmat(s.c1, s.c2, { flat: 1, double: 1, vein: .5 })); hood.scale.set(1, 1.2, 1); G.add(hood);
-      const vo = mesh(new THREE.SphereGeometry(.62, 18, 14), basic(INK)); G.add(vo); const e = mkEye(.22, P.yel, { slit: 1 }); e.position.set(0, .05, .5); e.userData.i = 0; G.add(e); U.eyes.push(e);
-      const beam = mesh(new THREE.PlaneGeometry(.06, 2.2), new THREE.MeshBasicMaterial({ color: P.yel, transparent: true, opacity: .5 })); beam.position.set(0, 0, .45); G.add(beam); an(U, beam, 'sx', .6, 7);
-      U.halves = []; for (const sd of [-1, 1]) { const g = new THREE.Group(), h = mesh(new THREE.SphereGeometry(.82, 18, 14, sd < 0 ? 0 : Math.PI / 2, Math.PI / 2), vmat(POR, PD, { flat: 1, double: 1, vein: .15 })); h.scale.set(1, 1.18, .8); g.add(h);
-        const eh = mesh(new THREE.CircleGeometry(.13, 12), basic(INK)); eh.scale.y = 1.4; eh.position.set(sd * .32, .15, .62); g.add(eh); const tr = mesh(new THREE.BoxGeometry(.04, .35, .01), basic(s.c1)); tr.position.set(sd * .32, -.12, .64); g.add(tr);
-        for (let i = 0; i < 3; i++) g.add(at(mesh(new THREE.BoxGeometry(.02, .22, .01), basic(INK)), sd * (.05 + i * .06), .5 - i * .25, .66 - i * .03));
-        G.add(g); U.halves.push([g, sd]); }
+      const HC = s.c1, HD = s.c2;
+      const hood = mesh(new THREE.SphereGeometry(1, 22, 16, Math.PI / 2 + .75, 6.283 - 1.5, 0, Math.PI * .8), vmat(HC, HD, { flat: 1, double: 1, vein: .6 })); hood.scale.set(1.05, 1.15, 1); G.add(hood);
+      const tip = mesh(new THREE.ConeGeometry(.28, .6, 10), vmat(HC, HD, { flat: 1, vein: .5 })); tip.position.set(0, 1.25, -.3); tip.rotation.x = -.5; G.add(tip); an(U, tip, 'rz', .12, .9);
+      const cape = mesh(new THREE.CylinderGeometry(.85, 1.15, .6, 14, 1, true), vmat(HC, HD, { flat: 1, double: 1, vein: .6 })); cape.position.y = -.9; G.add(cape);
+      for (let i = 0; i < 12; i++) { const a = i / 12 * 6.283, t = mesh(new THREE.ConeGeometry(.13, .35, 3), vmat(HC, HD, { flat: 1 })); t.position.set(Math.sin(a) * 1.1, -1.32, Math.cos(a) * 1.1); t.rotation.x = Math.PI; G.add(t); }
+      const vo = mesh(new THREE.SphereGeometry(.78, 18, 14), basic(INK)); vo.scale.set(1, 1.1, .9); vo.position.z = .05; G.add(vo);
+      for (const sd of [-1, 1]) { const g = mesh(new THREE.CircleGeometry(.11, 10), basic(P.yel)); g.scale.y = .55; g.position.set(sd * .26, .05, .78); G.add(g); an(U, g, 'sy', .5, 2.3, sd); }
+      const crk = mesh(new THREE.PlaneGeometry(.05, 1.0), basic('#fff3b0')); crk.position.set(0, -.15, .8); crk.rotation.z = .08; G.add(crk); an(U, crk, 'sx', .8, 5);
+      const te = new THREE.Group(); te.position.set(0, .72, .95); const e = mkEye(.26, P.yel, { slit: 1 }); e.userData.i = 0; te.add(e); U.eyes.push(e); const lid = mesh(new THREE.TorusGeometry(.3, .06, 6, 20), vmat(BONE, '#b9a98a', { flat: 1 })); lid.scale.y = .7; te.add(lid); for (let i = 0; i < 5; i++) { const ra = mesh(new THREE.ConeGeometry(.03, .16, 3), basic(P.yel)); const a = Math.PI * (.15 + i * .175); ra.position.set(Math.cos(a) * .36, Math.sin(a) * .3, 0); ra.rotation.z = a - Math.PI / 2; te.add(ra); } G.add(te); an(U, te, 'py', .08, 1.3);
+      U.tarot = []; const sym = [P.red, BILE, ETHER, P.yel, BRUISE]; for (let i = 0; i < 5; i++) { const c = new THREE.Group(); c.add(mesh(new THREE.BoxGeometry(.42, .64, .02), vmat(BONE, '#b9a98a', { flat: 1, vein: 0 }))); const fr = mesh(new THREE.BoxGeometry(.33, .53, .01), basic(INK)); fr.position.z = .012; c.add(fr); const sy = mesh(new THREE.CircleGeometry(.08, 10), basic(sym[i])); sy.position.z = .02; c.add(sy); const sy2 = mesh(new THREE.CircleGeometry(.035, 8), basic(INK)); sy2.position.z = .025; c.add(sy2); c.userData.a = i / 5 * 6.283; G.add(c); U.tarot.push(c); }
       return {};
     },
     parasite(G, U, s) {
@@ -1265,6 +1267,7 @@ if(f>${o.flat ? '.8' : '.64'})c=vec3(.04,.024,.028);c=mix(c,vec3(1.),uFl*.7);gl_
     U.anim.forEach(([o, ch, a, f, ph, b]) => { const v = Math.sin(t * f * (1 + S.act * .25) + ph) * a; if (ch === 's') o.scale.setScalar(b * (1 + v)); else if (ch === 'sx') o.scale.x = b * (1 + v); else if (ch === 'sy') o.scale.y = b * (1 + v); else if (ch[0] === 'p') o.position[ch[1]] = b + v; else o.rotation[ch[1]] = b + v; });
     U.rise.forEach(m => { const d = m.userData, k = ((t * d.sp + d.ph) % 1 + 1) % 1; m.position.set(d.x + Math.sin(t * 2 + d.ph * 5) * .05, -d.h / 2 + k * d.h, d.z); });
     if (U.rosary) U.rosary.forEach((b, i) => { const a = b.userData.a + t * .6; b.position.set(Math.cos(a) * 1.45, -.35 + Math.sin(a * 2 + t) * .1, Math.sin(a) * .55 + .2); });
+    if (U.tarot) U.tarot.forEach((c, i) => { const a = c.userData.a + t * .45; c.position.set(Math.cos(a) * 1.55, Math.sin(a * 2 + t) * .25 - .1, Math.sin(a) * .7 + .1); c.rotation.set(Math.sin(t + i) * .2, -Math.cos(a) * .6, Math.sin(t * .7 + i) * .3); });
     if (U.halves) U.halves.forEach(([g, sd]) => { g.position.x = sd * (.1 + Math.abs(Math.sin(t * .9)) * .22); g.rotation.z = sd * Math.sin(t * .9) * .06; });
     if (U.echo) U.echo.forEach(([g, sd]) => { g.position.x = sd * (.38 + Math.sin(t * 1.6) * .12); g.position.y = .05 + Math.sin(t * 1.6 + sd) * .05; });
     if (U.waves) U.waves.forEach(w => { const k = (t * .55 + w.userData.ph) % 1; w.scale.setScalar(1 + k * 5); w.position.z = .7 + k * .4; w.material.opacity = (1 - k) * .9; });
