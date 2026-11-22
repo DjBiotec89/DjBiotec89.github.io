@@ -292,7 +292,9 @@ canvas.gacha { width:calc(var(--u)*126); height:calc(var(--u)*180); image-render
   <div id="pick" class="dialog"><div class="shade"></div><div class="head big" id="pickHead">Wähle 1</div><div class="head small" id="pickSub"></div><div class="cards" id="pickCards"></div><div class="row" id="pickRow"></div></div>
   <div id="msg" class="dialog"><div class="shade"></div><div class="head big" id="msgHead"></div><div class="u" id="overlayText"></div><div class="stats small" id="msgStats"></div><div class="cards" id="msgCards"></div><div class="row" id="msgRow"></div></div>
 </div></div>
-<script type="module" src="js/game.js"></script>
+<script>window.addEventListener("error", function (e) { window.__byErr = (e && e.message) || "Fehler"; });</script>
+<script defer src="js/bundle.js"></script>
+<script defer src="js/touchfix.js"></script>
 <script>try { if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {}); } catch (e) {}</script>
 <div id="oldbrowser" style="display:none;position:fixed;inset:0;z-index:99;background:#1a1224;color:#fffcf0;font:12px/1.8 monospace;padding:24px;text-align:center"></div>
 <script>window.addEventListener('error', function (e) { window.__byErr = (e && e.message) || 'Fehler'; });
