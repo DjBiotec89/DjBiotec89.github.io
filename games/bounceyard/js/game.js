@@ -230,22 +230,138 @@ function drawRail(g, pts, col = '#c9cbd6', hl = '#fffcf0', dash = 0) {
   g.fillStyle = hl; for (let i = 0; i < pts.length; i += 2) { const [x, y] = pts[i]; g.fillRect(Math.round(x) - 1, Math.round(y) - 1, 1, 1); }
   g.fillStyle = '#6b7083'; for (let i = 3; i < pts.length; i += 7) { const [x, y] = pts[i]; g.fillRect(Math.round(x), Math.round(y) + 2, 1, 2); }
 }
+// ===== Saga-Karte (scrollbar, alle 6 Biome übereinander)
+const SG = { SEC: 470, TOPPAD: 34 };
+SG.H = BIOMES.length * SG.SEC + SG.TOPPAD;
+const BOSSI = BIOMES.map((b) => img(`assets/enemies/${b.boss}.png`));
+const STARI = img('assets/misc/star_on.png');
+const NCOL = { kampf: '#e8565f', elite: '#9a76d0', schatz: '#ffcf4a', laden: '#6fd36a', rast: '#ff9a4a', ereignis: '#6fd0f0', sonder: '#ff86c8', boss: '#ffd45c' };
+const BIOCOL = ['#6fcf5f', '#4fb4e8', '#c9955f', '#9ad0ff', '#ff86c8', '#c08bff'];
+const secBot = (c) => SG.H - c * SG.SEC;
+const rowY = (c, r) => secBot(c) - (r < 0 ? 46 : 84 + r * 40);
+const hubX = (c, r) => Math.round(90 + Math.sin((c * 11 + r + 1) * 0.8) * 34);
+function layoutRow(row, c) {
+  const r = row[0].r, cx = hubX(c, r), n = row.length, sp = n === 3 ? 42 : 52;
+  let xs = row.map((_, i) => cx + (i - (n - 1) / 2) * sp);
+  const lo = Math.min(...xs), hi = Math.max(...xs); if (lo < 22) xs = xs.map((x) => x + 22 - lo); if (hi > 158) xs = xs.map((x) => x - (hi - 158));
+  row.forEach((m, i) => { m.mx = Math.round(xs[i]); m.my = rowY(c, r); });
+}
+const PXC = {};
+function pxDisc(r, col, dark, flat) {
+  const key = r + col + (dark || '') + (flat ? 'f' : ''); if (PXC[key]) return PXC[key];
+  const c = document.createElement('canvas'); c.width = c.height = r * 2 + 3; const g = c.getContext('2d'); const o = r + 1;
+  if (!flat) for (let y = -r - 1; y <= r + 1; y++) { const w = Math.floor(Math.sqrt(Math.max(0, (r + 1.2) * (r + 1.2) - y * y))); g.fillStyle = '#2b1d3a'; g.fillRect(o - w, o + y, w * 2 + 1, 1); }
+  for (let y = -r; y <= r; y++) { const w = Math.floor(Math.sqrt(Math.max(0, (r + 0.2) * (r + 0.2) - y * y))); g.fillStyle = dark && y > r * 0.35 ? dark : col; g.fillRect(o - w, o + y, w * 2 + 1, 1); }
+  if (dark && r > 5) { g.fillStyle = 'rgba(255,252,240,0.75)'; g.fillRect(o - Math.round(r * 0.55), o - Math.round(r * 0.6), 3, 2); g.fillRect(o - Math.round(r * 0.65), o - Math.round(r * 0.35), 1, 2); }
+  return (PXC[key] = c);
+}
+const disc = (g, x, y, r, col, dark) => g.drawImage(pxDisc(r, col, dark), Math.round(x) - r - 1, Math.round(y) - r - 1);
+const fdisc = (g, x, y, r, col) => g.drawImage(pxDisc(r, col, null, true), Math.round(x) - r - 1, Math.round(y) - r - 1);
+function catmull(P, steps = 14) {
+  const out = [];
+  for (let i = 0; i < P.length - 1; i++) { const p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(P.length - 1, i + 2)];
+    for (let k = 0; k < steps; k++) { const t = k / steps, t2 = t * t, t3 = t2 * t; out.push([0.5 * (2 * p1[0] + (-p0[0] + p2[0]) * t + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3), 0.5 * (2 * p1[1] + (-p0[1] + p2[1]) * t + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3)]); } }
+  out.push(P[P.length - 1]); return out;
+}
+function road(g, pts, w = 6, col = '#ecd8a8', edge = '#b8925a', dots = true) {
+  for (const [x, y] of pts) fdisc(g, x, y, w, '#2b1d3a'); for (const [x, y] of pts) fdisc(g, x, y, w - 1, edge); for (const [x, y] of pts) fdisc(g, x + 0.4, y - 0.6, w - 2, col);
+  if (dots) { g.fillStyle = '#fffcf0'; let acc = 0; for (let i = 1; i < pts.length; i++) { acc += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); if (acc > 7) { acc = 0; g.fillRect(Math.round(pts[i][0]) - 1, Math.round(pts[i][1]) - 1, 2, 2); } } }
+}
+function ribbon(g, cx, cy, text, col) {
+  g.font = '8px "Press Start 2P", monospace'; const w = Math.min(160, Math.ceil(g.measureText(text).width) + 14), x = Math.round(cx - w / 2), y = Math.round(cy - 7);
+  g.fillStyle = '#2b1d3a'; g.fillRect(x - 9, y + 3, w + 18, 13); g.fillStyle = shade(col, 0.6); g.fillRect(x - 8, y + 4, 8, 11); g.fillRect(x + w, y + 4, 8, 11);
+  g.fillStyle = '#2b1d3a'; g.fillRect(x - 9, y + 8, 3, 3); g.fillRect(x + w + 6, y + 8, 3, 3);
+  g.fillRect(x - 1, y - 1, w + 2, 16); g.fillStyle = col; g.fillRect(x, y, w, 14); g.fillStyle = shade(col, 1.25); g.fillRect(x, y, w, 2); g.fillStyle = shade(col, 0.75); g.fillRect(x, y + 12, w, 2);
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#2b1d3a'; g.fillText(text, cx + 1, cy + 2); g.fillStyle = '#fffcf0'; g.fillText(text, cx, cy + 1);
+}
 function drawMapBase() {
-  const c = document.createElement('canvas'); c.width = LW; c.height = LH; const g = c.getContext('2d');
-  TILE = BT[CH()];
-  drawGrass(g, LW, LH, 99 + CH());
-  g.fillStyle = 'rgba(26,18,36,0.45)'; g.fillRect(0, 0, LW, LH);
-  drawHedge(g, 0, 0, LW, 16);
-  g.fillStyle = 'rgba(26,18,36,0.35)'; g.fillRect(0, 262, LW, 58);
-  g.drawImage(DECO[BIO().id][0], 4, 240); g.drawImage(DECO[BIO().id][1], 160, 244);
-  drawPosts(g, MR_ENTRY, 64); drawRail(g, MR_ENTRY);
-  // Bumper an den Kurven
-  for (const [x, y] of [[163, 66], [21, 96]]) { g.fillStyle = '#2b1d3a'; g.beginPath(); g.arc(x, y, 5, 0, 7); g.fill(); g.fillStyle = '#ff5a6e'; g.beginPath(); g.arc(x, y, 3.6, 0, 7); g.fill(); g.fillStyle = '#ffd0d8'; g.fillRect(x - 2, y - 2, 1, 1); }
-  mapBase = c;
+  const c0 = CH(), H = SG.H, NB = BIOMES.length;
+  const cv = document.createElement('canvas'); cv.width = LW; cv.height = H; const g = cv.getContext('2d');
+  const prevT = TILE;
+  for (let c = 0; c < NB; c++) {
+    const top = c === NB - 1 ? 0 : secBot(c) - SG.SEC, hh = secBot(c) - top;
+    const sec = document.createElement('canvas'); sec.width = LW; sec.height = hh;
+    TILE = BT[c]; drawGrass(sec.getContext('2d'), LW, hh, 77 + c * 13); g.drawImage(sec, 0, top);
+    let sd = 991 + c * 37; const rr = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < 18; i++) { const y = top + 26 + rr() * (hh - 60); const r2 = Math.max(-1, Math.min(9, Math.round((secBot(c) - 84 - y) / 40))); const cx = hubX(c, r2); let x = rr() * (LW - 16); if (Math.abs(x + 8 - cx) < 70) x = cx < 90 ? 130 + rr() * 34 : rr() * 34; g.drawImage(DECO[BIOMES[c].id][i % 2], Math.round(x), Math.round(y)); }
+    drawHedge(g, 0, secBot(c) - 6, LW, 6);
+  }
+  TILE = prevT;
+  const P = []; for (let c = 0; c < NB; c++) for (let r = -1; r < MAP_ROWS; r++) P.push([hubX(c, r), rowY(c, r)]);
+  P.push([hubX(NB - 1, MAP_ROWS - 1), 2]);
+  road(g, catmull(P));
+  for (let c = c0 + 1; c < NB; c++) { const top = c === NB - 1 ? 0 : secBot(c) - SG.SEC; g.fillStyle = 'rgba(26,18,36,0.45)'; g.fillRect(0, top, LW, secBot(c) - top); }
+  for (let c = 0; c < c0; c++) { g.fillStyle = 'rgba(26,18,36,0.2)'; g.fillRect(0, secBot(c) - SG.SEC, LW, SG.SEC); }
+  for (let c = 0; c < NB; c++) ribbon(g, 90, secBot(c) - 22, BIOMES[c].name, c > c0 ? '#8a8fa3' : BIOCOL[c]);
+  mapBase = cv;
 }
 function amReset() {
-  const av = availNodes();
-  G.mr = { ph: 'in', t: 0, br: av.map((n) => ({ n, pts: branchPts(n.x) })), sel: null };
+  const R = G.run; R.maps = R.maps || [];
+  const c = CH(), av = availNodes(); layoutRow(av, c); for (const row of R.map) layoutRow(row, c);
+  const from = R.node ? [R.node.mx, R.node.my] : [hubX(c, -1), rowY(c, -1)];
+  G.mr = { ph: 'idle', t: 0, sel: null, cam: clamp(from[1] - 200, 0, SG.H - LH), vel: 0, drag: null, av: from[0], ay: from[1] };
+}
+function mapNode(g, n, x, y, st, t, c) {
+  const big = n.type === 'boss', r = big ? 14 : 10, col = NCOL[n.type] || '#c9cbd6';
+  g.fillStyle = 'rgba(26,18,36,0.4)'; g.fillRect(Math.round(x) - r + 2, Math.round(y) + r - 1, r * 2 - 3, 3);
+  g.font = '8px "Press Start 2P", monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  if (st === 'lock') { disc(g, x, y, r - 2, '#6b7083', '#4a4f63'); if (big) { g.globalAlpha = 0.6; g.drawImage(MAPI.boss, Math.round(x) - 8, Math.round(y) - 8); g.globalAlpha = 1; } else { g.fillStyle = '#2b1d3a'; g.fillText('?', x + 1, y + 2); g.fillStyle = '#c9cbd6'; g.fillText('?', x, y + 1); } return; }
+  if (st === 'skip') { disc(g, x, y, r - 4, '#6b7083', '#4a4f63'); g.globalAlpha = 0.4; g.drawImage(MAPI[n.type], Math.round(x) - 8, Math.round(y) - 8); g.globalAlpha = 1; return; }
+  const bob = st === 'avail' ? Math.round(Math.sin(t * 5 + x) * 1.4) : 0, Y = y - bob;
+  if (st === 'avail' || st === 'sel') { const rr = r + 4 + (st === 'sel' ? 1 : 0); g.fillStyle = st === 'sel' ? '#ffd45c' : '#fffcf0'; for (let a = 0; a < 16; a++) { const an = a / 16 * Math.PI * 2 + t * (st === 'sel' ? 2.5 : 1.2); g.fillRect(Math.round(x + Math.cos(an) * rr), Math.round(Y + Math.sin(an) * rr), 1, 1); } }
+  disc(g, x, Y, r, st === 'future' ? shade(col, 0.62) : col, shade(col, st === 'future' ? 0.45 : 0.72));
+  g.globalAlpha = st === 'future' ? 0.6 : 1; g.drawImage(MAPI[n.type], Math.round(x) - 8, Math.round(Y) - 9); g.globalAlpha = 1;
+  if (st === 'done' && STARI.complete) g.drawImage(STARI, Math.round(x) + r - 6, Math.round(Y) - r - 3);
+  const num = String(c * MAP_ROWS + n.r + 1), tw = num.length * 8 + 3, tx = Math.round(x - tw / 2), ty = Math.round(Y + r);
+  g.fillStyle = '#2b1d3a'; g.fillRect(tx - 1, ty - 1, tw + 2, 11); g.fillStyle = st === 'avail' || st === 'sel' ? '#ffd45c' : st === 'future' ? '#8a8fa3' : '#fffcf0'; g.fillRect(tx, ty, tw, 9);
+  g.fillStyle = '#2b1d3a'; g.fillText(num, x + 1, ty + 5);
+}
+function drawMap() {
+  if (!mapBase) return;
+  const R = G.run, M = G.mr; if (!M) return;
+  const t = G.t, dt = Math.min(0.05, t - (M.lt ?? t)); M.lt = t; M.t += dt;
+  if (!M.drag) { M.cam += M.vel * dt; M.vel *= Math.pow(0.03, dt); if (Math.abs(M.vel) < 4) M.vel = 0; }
+  if (M.ph === 'hop') { const tgt = M.sel.my - 200; M.cam += (tgt - M.cam) * Math.min(1, dt * 6); }
+  M.cam = clamp(M.cam, 0, SG.H - LH); const cam = Math.round(M.cam);
+  mg.clearRect(0, 0, LW, LH); mg.drawImage(mapBase, 0, cam, LW, LH, 0, 0, LW, LH);
+  mg.save(); mg.translate(0, -cam);
+  const c0 = CH(), av = availNodes(); layoutRow(av, c0);
+  const vis = (y) => y > cam - 44 && y < cam + LH + 44;
+  for (let c = 0; c < BIOMES.length; c++) {
+    const map = c < c0 ? R.maps && R.maps[c] : c === c0 ? R.map : null;
+    if (!map) {
+      if (c <= c0) continue;
+      for (let r = 0; r < MAP_ROWS; r++) { const y = rowY(c, r); if (vis(y)) mapNode(mg, { type: r === MAP_ROWS - 1 ? 'boss' : 'kampf', r }, hubX(c, r), y, 'lock', t, c); }
+      const by = rowY(c, MAP_ROWS - 1), bi = BOSSI[c]; if (vis(by) && bi.complete) { mg.globalAlpha = 0.3; mg.drawImage(bi, 0, 0, 48, 48, hubX(c, 9) < 90 ? hubX(c, 9) + 20 : hubX(c, 9) - 68, by - 34, 48, 48); mg.globalAlpha = 1; }
+      continue;
+    }
+    for (const row of map) {
+      layoutRow(row, c); const y = row[0].my; if (!vis(y)) continue; const hx = hubX(c, row[0].r);
+      for (const n of row) if (Math.abs(n.mx - hx) > 2) road(mg, catmull([[hx, y], [(hx + n.mx) / 2, y + 2], [n.mx, y]], 8), 4, '#ecd8a8', '#b8925a', false);
+    }
+    for (const row of map) {
+      const y = row[0].my; if (!vis(y)) continue; const isAv = c === c0 && row === av; const chosen = row.find((n) => n.done);
+      if (row[0].type === 'boss') { const bi = BOSSI[c]; if (bi.complete) { const f = Math.floor(t * 2) % 2, bx = row[0].mx < 90 ? row[0].mx + 20 : row[0].mx - 68; mg.globalAlpha = c < c0 ? 0.5 : 1; mg.drawImage(bi, f * 48, 0, 48, 48, bx, y - 34, 48, 48); mg.globalAlpha = 1; } }
+      for (const n of row) {
+        const past = c < c0 || chosen || (c === c0 && R.node && row[0].r <= R.node.r);
+        const st = isAv ? (M.sel === n ? 'sel' : 'avail') : n.done ? 'done' : past ? 'skip' : 'future';
+        mapNode(mg, n, n.mx, n.my, st, t, c);
+      }
+    }
+  }
+  let ax = M.av, ay = M.ay;
+  if (M.ph === 'hop') {
+    const k = Math.min(1, M.t / 0.7), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    ax = M.av + (M.sel.mx - M.av) * e; ay = M.ay + (M.sel.my - M.ay) * e - Math.sin(k * Math.PI) * 26;
+    if (Math.random() < 0.6) emit(ax, ay - 8 - cam, '#ffd45c', 1, 10);
+    if (k >= 1 && !M.done) { M.done = true; sfx.play('pop'); emit(ax, ay - 6 - cam, '#fffcf0', 14, 60); setTimeout(() => G.mode === 'map' && enterNode(M.sel), 200); }
+  } else ay -= Math.abs(Math.sin(t * 3.5)) * 3;
+  mg.fillStyle = 'rgba(26,18,36,0.45)'; mg.fillRect(Math.round(ax) - 5, Math.round(M.ph === 'hop' ? ay + 10 : M.ay + 2), 10, 2);
+  mg.drawImage(gImg(R.g), (Math.floor(t * 6) % 4) * 16, 0, 16, 16, Math.round(ax) - 8, Math.round(ay) - 18, 16, 16);
+  mg.restore();
+  { const gr = mg.createLinearGradient(0, 0, 0, 50); gr.addColorStop(0, 'rgba(26,18,36,0.85)'); gr.addColorStop(1, 'rgba(26,18,36,0)'); mg.fillStyle = gr; mg.fillRect(0, 0, LW, 50); }
+  const sy = av[0].my - cam;
+  if (M.ph !== 'hop' && (sy < 30 || sy > LH - 30)) { const up = sy < 30, yy = up ? 44 : LH - 52, b2 = Math.floor(t * 4) % 2 * (up ? -1 : 1); mg.fillStyle = '#2b1d3a'; mg.fillRect(78, yy - 6 + b2, 24, 12); mg.fillStyle = '#ffd45c'; for (let i = 0; i < 5; i++) mg.fillRect(90 - i, yy + (up ? i - 2 : 2 - i) + b2, 1 + 2 * i, 1); }
 }
 function stationDraw(g, n, x, t, on) {
   const col = { kampf: '#e8565f', elite: '#9a76d0', schatz: '#ffcf4a', laden: '#6fd36a', rast: '#ff9a4a', ereignis: '#6fd0f0', sonder: '#ff86c8', boss: '#ffd45c' }[n.type];
@@ -264,30 +380,8 @@ function stationDraw(g, n, x, t, on) {
   g.drawImage(MAPI[n.type], Math.round(x) - 8, by + 4 + bob);
   if (on) { g.fillStyle = Math.floor(t * 8) % 2 ? '#ffd45c' : '#fffcf0'; for (let a = 0; a < 10; a++) { const an = a / 10 * Math.PI * 2 + t; g.fillRect(Math.round(x + Math.cos(an) * (w / 2 + 6)), Math.round(by + 11 + Math.sin(an) * 16), 1, 1); } }
 }
-function drawMap() {
-  if (!mapBase) return;
-  const R = G.run, M = G.mr; if (!M) return;
-  const t = G.t, dt = Math.min(0.05, t - (M.lt ?? t)); M.lt = t; M.t += dt;
-  mg.clearRect(0, 0, LW, LH); mg.drawImage(mapBase, 0, 0);
-  for (const b of M.br) drawPosts(mg, b.pts.slice(30, 60), 100);
-  for (const b of M.br) if (b !== M.sel) drawRail(mg, b.pts, '#8a8fa3', '#c9cbd6', 1);
-  if (M.sel) drawRail(mg, M.sel.pts, '#ffd45c', '#fff6d0');
-  for (const b of M.br) stationDraw(mg, b.n, b.n.x, t, b === M.sel);
-  // Weiche
-  const [wx, wy] = MR_SW; const tgt = M.sel ? M.sel.pts[12] : [wx, wy + 12]; const an = Math.atan2(tgt[1] - wy, tgt[0] - wx);
-  mg.fillStyle = '#2b1d3a'; mg.beginPath(); mg.arc(wx, wy, 6, 0, 7); mg.fill(); mg.fillStyle = '#ffd45c'; mg.beginPath(); mg.arc(wx, wy, 4.5, 0, 7); mg.fill();
-  for (let i = 0; i < 10; i++) { mg.fillStyle = i < 2 ? '#2b1d3a' : '#c9cbd6'; mg.fillRect(Math.round(wx + Math.cos(an) * i) - 1, Math.round(wy + Math.sin(an) * i) - 1, 2, 2); }
-  // Murmel
-  let px, py;
-  if (M.ph === 'in') { const k = Math.min(1, M.t / 1.3), e = 1 - (1 - k) * (1 - k); const p = MR_ENTRY[Math.min(MR_ENTRY.length - 1, Math.floor(e * (MR_ENTRY.length - 1)))]; [px, py] = p; if (k >= 1) { M.ph = 'idle'; M.t = 0; } }
-  else if (M.ph === 'roll') { const k = Math.min(1, M.t / 0.75), e = k * k; const p = M.sel.pts[Math.min(M.sel.pts.length - 1, Math.floor(e * (M.sel.pts.length - 1)))]; [px, py] = p; if (Math.random() < 0.5) emit(px, py, '#ffd45c', 1, 20); if (k >= 1 && !M.done) { M.done = true; emit(px, py + 8, '#fffcf0', 14, 60); sfx.play('pop'); setTimeout(() => G.mode === 'map' && enterNode(M.sel.n), 160); } }
-  else { [px, py] = MR_SW; py -= Math.abs(Math.sin(t * 4)) * 2; }
-  const fr = Math.floor(t * 8) % 4;
-  mg.drawImage(gImg(R.g), fr * 16, 0, 16, 16, Math.round(px) - 8, Math.round(py) - 14, 16, 16);
-  if (M.ph === 'idle' && !M.sel) for (const b of M.br) { const q = b.pts[30 + (Math.floor(t * 20) % (b.pts.length - 40))]; mg.fillStyle = '#fffcf0'; mg.fillRect(Math.round(q[0]), Math.round(q[1]) - 1, 1, 1); }
-}
 function showMap() {
-  setMode('map'); drawMapBase(); amReset(); G.mapSel = null; G.mapRoll = null; $('mapInfo').classList.remove('on'); $('mapHint').style.display = 'block'; $('mapHint').textContent = 'Wähle deine Bahn!';
+  setMode('map'); drawMapBase(); amReset(); G.mapSel = null; G.mapRoll = null; $('mapInfo').classList.remove('on'); $('mapHint').style.display = 'block'; $('mapHint').textContent = 'Wähle dein nächstes Level!';
   const cur = G.run.node ? G.run.node.r + 1 : 0;
   $('mapTop').textContent = BIO().name;
   $('mapPips').innerHTML = Array.from({ length: MAP_ROWS }, (_, i) => `<i class="${i < cur ? 'on' : i === cur ? 'cur' : ''}"></i>`).join('');
@@ -302,17 +396,31 @@ function selectNode(n) {
   $('miIcon').src = `assets/map/${n.type}.png`; $('miTitle').textContent = t; $('miText').innerHTML = d + `<div class="rew">${RW.map((r) => `<span><img class="px" src="assets/${r}.png"></span>`).join('')}</div>`;
   $('mapHint').style.display = 'none'; $('mapInfo').classList.add('on');
 }
-function mrGo() { const M = G.mr; if (!M || !M.sel || M.ph === 'roll') return; M.ph = 'roll'; M.t = 0; M.done = false; $('mapInfo').classList.remove('on'); sfx.play('launch'); }
+function mrGo() { const M = G.mr; if (!M || !M.sel || M.ph === 'hop') return; M.ph = 'hop'; M.t = 0; M.done = false; M.vel = 0; $('mapInfo').classList.remove('on'); sfx.play('launch'); }
 $('miGo').onclick = () => { if (G.mapSel) mrGo(); };
 function rollTo(n) { if (G.mapRoll) return; const R = G.run; G.mapRoll = { n, t0: G.t, sy: R.node ? R.node.y + 9 : 286 }; $('mapInfo').classList.remove('on'); sfx.play('launch'); setTimeout(() => { G.mapRoll = null; enterNode(n); }, 520); }
+const mapPt = (ev) => { const b = mapCv.getBoundingClientRect(); return [(ev.clientX - b.left) / b.width * LW, (ev.clientY - b.top) / b.height * LH]; };
 mapCv.addEventListener('pointerdown', (ev) => {
-  if (G.mode !== 'map') return; sfx.unlock();
-  const b = mapCv.getBoundingClientRect(); const x = (ev.clientX - b.left) / b.width * LW, y = (ev.clientY - b.top) / b.height * LH;
-  const M = G.mr; if (!M || M.ph === 'roll') return;
-  let best = null, bd = 16;
-  for (const b of M.br) { if (Math.abs(b.n.x - x) < 16 && y > MR_ST - 44 && y < MR_ST + 30) { best = b; break; } for (let i = 14; i < b.pts.length; i += 3) { const d = Math.hypot(b.pts[i][0] - x, b.pts[i][1] - y); if (d < bd) { bd = d; best = b; } } }
-  if (best) { if (M.sel === best && $('mapInfo').classList.contains('on')) return mrGo(); M.sel = best; selectNode(best.n); }
+  if (G.mode !== 'map') return; sfx.unlock(); const M = G.mr; if (!M || M.ph === 'hop') return;
+  const [x, y] = mapPt(ev); M.drag = { x, y, cam: M.cam, ly: y, lt: performance.now(), moved: 0 }; M.vel = 0;
+  try { mapCv.setPointerCapture(ev.pointerId); } catch (e) {}
 });
+mapCv.addEventListener('pointermove', (ev) => {
+  const M = G.mr; if (!M || !M.drag) return; const [, y] = mapPt(ev); const D = M.drag;
+  M.cam = D.cam - (y - D.y); D.moved = Math.max(D.moved, Math.abs(y - D.y));
+  const now = performance.now(), dtm = Math.max(1, now - D.lt); M.vel = -(y - D.ly) / dtm * 1000 * 0.8; D.ly = y; D.lt = now;
+});
+const mapUp = (ev) => {
+  const M = G.mr; if (!M || !M.drag) return; const D = M.drag; M.drag = null;
+  if (performance.now() - D.lt > 90) M.vel = 0;
+  if (D.moved > 5) return; M.vel = 0;
+  const [x, y0] = mapPt(ev), y = y0 + M.cam; const av = availNodes();
+  const n = av.find((m) => Math.hypot(m.mx - x, m.my - y) < (m.type === 'boss' ? 19 : 15));
+  if (!n) return;
+  if (M.sel === n && $('mapInfo').classList.contains('on')) return mrGo();
+  M.sel = n; selectNode(n);
+};
+mapCv.addEventListener('pointerup', mapUp); mapCv.addEventListener('pointercancel', () => { if (G.mr) G.mr.drag = null; });
 function enterNode(n) {
   $('mapInfo').classList.remove('on'); G.mapSel = null;
   const R = G.run; R.pending = n; R.floor = n.r; sfx.play('ui');
@@ -326,7 +434,7 @@ function enterNode(n) {
   else if (n.type === 'ereignis') openEvent();
 }
 function nextChapter() {
-  const R = G.run; R.chapter++; R.map = genMap(); R.node = null; R.floor = 0; R.glanz += 3;
+  const R = G.run; R.maps = R.maps || []; R.maps[R.chapter] = R.map; R.chapter++; R.map = genMap(); R.node = null; R.floor = 0; R.glanz += 3;
   R.hearts = Math.min(R.maxHearts, R.hearts + 2); buildBg(R.chapter);
   const B = BIO(); sfx.play('win');
   openDialog({ head: `Kapitel ${R.chapter + 1}`, text: `<div class="biome"><div class="bn">${B.name}</div><div class="small">${B.sub}</div><div class="bossview" style="background-image:url(assets/enemies/${B.boss}.png)"></div><div class="small" style="color:#ff5a6e">Boss: ${B.bossName}</div><div class="chips">${chip(MIC('heart'), '+2 Herzen', '#ff5a6e')}${chip(MIC('glanz'), '+3 Glanz', '#ffd45c')}</div></div>`, buttons: [{ label: 'Weiter', fn: () => { closeDialog(); showMap(); } }] });

@@ -1,5 +1,5 @@
 // BOUNCEYARD – Offline-Cache: lädt einmal Gesehenes aus dem Cache, aktualisiert im Hintergrund
-const C = 'bounceyard-v2';
+const C = 'bounceyard-v3';
 self.addEventListener('install', (e) => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== C).map((k) => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', (e) => {
